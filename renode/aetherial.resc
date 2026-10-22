@@ -1,0 +1,4 @@
+mach create "aetherial"
+machine LoadPlatformDescription @renode/stm32g431.repl
+sysbus LoadELF @build/stm32-debug/firmware.elf
+start
