@@ -44,7 +44,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+volatile uint32_t tick_counter = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,6 +61,14 @@ static void blink_task(void *argument)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
     vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+static void counter_task(void *argument) 
+{
+  for(;;) 
+  {
+    tick_counter++;
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 
@@ -106,6 +114,7 @@ int main(void)
   HAL_GPIO_Init(GPIOB, &led);
 
   xTaskCreate(blink_task, "Blink Task", 256, NULL, 1, NULL);
+  xTaskCreate(counter_task, "Counter Task", 256, NULL, 1, NULL);
   vTaskStartScheduler();
 
   /* USER CODE END 2 */
