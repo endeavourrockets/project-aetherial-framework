@@ -21,6 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* USER CODE END Includes */
 
@@ -53,6 +55,14 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void blink_task(void *argument) 
+{
+  for(;;) 
+  {
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
 
 /* USER CODE END 0 */
 
@@ -95,6 +105,9 @@ int main(void)
   led.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &led);
 
+  xTaskCreate(blink_task, "Blink Task", 256, NULL, 1, NULL);
+  vTaskStartScheduler();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -104,8 +117,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
-    HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
