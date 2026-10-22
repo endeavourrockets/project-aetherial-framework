@@ -61,10 +61,16 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
+add_library(freertos_config INTERFACE)
+target_include_directories(freertos_config SYSTEM INTERFACE App/rtos)
+set(FREERTOS_PORT GCC_ARM_CM4F CACHE STRING "")
+set(FREERTOS_HEAP 4 CACHE STRING "")
+add_subdirectory(../third_party/FreeRTOS-Kernel ${CMAKE_BINARY_DIR}/freertos)
+
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-
+    freertos_kernel
     m
 )
 
