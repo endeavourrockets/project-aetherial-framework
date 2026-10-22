@@ -86,6 +86,15 @@ int main(void)
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
 
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  GPIO_InitTypeDef led = {0};
+  led.Pin = GPIO_PIN_8;
+  led.Mode = GPIO_MODE_OUTPUT_PP;
+  led.Pull = GPIO_NOPULL;
+  led.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &led);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -95,6 +104,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
+    HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
