@@ -44,6 +44,12 @@ typedef struct
     int32_t altitude_cm;
     int32_t accel_mg[3];
 } processed_reading_t;
+
+typedef struct 
+{
+  uint8_t id;
+  uint8_t argument;
+} command_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -64,6 +70,9 @@ volatile uint32_t readings_sent = 0;
 volatile uint32_t readings_logged = 0;
 QueueHandle_t telemetry_queue;
 volatile uint32_t readings_sent_to_ground = 0;
+volatile bool system_healthy = true;
+QueueHandle_t command_queue;
+volatile uint32_t commands_handled = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,31 +117,38 @@ static void radio_send(const processed_reading_t *reading)
 {
 
 }
-static void sensor_task(void *argument) 
+static void sensor_task(void *argument)
 {
   start_readings();
-  for(;;)
+
+  for (;;)
   {
     raw_reading_t raw;
     processed_reading_t processed;
-    if (get_raw_readings(&raw))
+
+    if (system_healthy)
     {
-      if (validate(&raw))
+      if (get_raw_readings(&raw))
       {
-        process(&raw, &processed);
+        if (validate(&raw))
+        {
+          process(&raw, &processed);
+        }
+        else
+        {
+          processed.timestamp_ms = raw.timestamp_ms;
+          processed.valid = false;
+          processed.altitude_cm = 0;
+          processed.accel_mg[0] = raw.accel_raw[0];
+          processed.accel_mg[1] = raw.accel_raw[1];
+          processed.accel_mg[2] = raw.accel_raw[2];
+        }
+
+        xQueueSend(log_queue, &processed, portMAX_DELAY);
+        readings_sent++;
       }
-      else
-      {
-        processed.timestamp_ms = raw.timestamp_ms;
-        processed.valid = false;
-        processed.altitude_cm = 0;
-        processed.accel_mg[0] = raw.accel_raw[0];
-        processed.accel_mg[1] = raw.accel_raw[1];
-        processed.accel_mg[2] = raw.accel_raw[2];
-      }
-      xQueueSend(log_queue, &processed, portMAX_DELAY);
-      readings_sent++;
     }
+
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
@@ -159,6 +175,35 @@ static void telemetry_task(void *argument)
     {
       radio_send(&reading);
       readings_sent_to_ground++;
+    }
+  }
+}
+static bool core_health_ok(void) 
+{
+  return true;
+}
+static void health_task(void *argument) 
+{
+  for(;;) 
+  {
+    system_healthy = core_health_ok();
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+static void execute_command(const command_t *command)
+{
+
+}
+static void command_task(void *argument)
+{
+  for (;;)
+  {
+    command_t command;
+
+    if (xQueueReceive(command_queue, &command, portMAX_DELAY) == pdPASS)
+    {
+      execute_command(&command);
+      commands_handled++;
     }
   }
 }
@@ -205,11 +250,13 @@ int main(void)
   HAL_GPIO_Init(GPIOB, &led);
   log_queue = xQueueCreate(8, sizeof(processed_reading_t));
   telemetry_queue = xQueueCreate(8, sizeof(processed_reading_t));
+  command_queue = xQueueCreate(4, sizeof(command_t));
+  xTaskCreate(health_task, "Health Task", 256, NULL, 1, NULL);
   xTaskCreate(sensor_task, "Sensor Task", 256, NULL, 1, NULL);
   xTaskCreate(logging_task, "Logging Task", 256, NULL, 1, NULL);
   xTaskCreate(telemetry_task, "Telemetry Task", 256, NULL, 1, NULL);
+  xTaskCreate(command_task, "Command Task", 256, NULL, 1, NULL);
   vTaskStartScheduler();
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
