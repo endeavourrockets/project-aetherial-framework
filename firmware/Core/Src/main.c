@@ -24,6 +24,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "event_groups.h"
 #include <stdbool.h>
 
 /* USER CODE END Includes */
@@ -54,7 +55,12 @@ typedef struct
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CHECKIN_HEALTH    (1u << 0)
+#define CHECKIN_SENSOR    (1u << 1)
+#define CHECKIN_LOGGING   (1u << 2)
+#define CHECKIN_TELEMETRY (1u << 3)
+#define CHECKIN_COMMANDS  (1u << 4)
+#define CHECKIN_ALL       (CHECKIN_HEALTH | CHECKIN_SENSOR | CHECKIN_LOGGING | CHECKIN_TELEMETRY | CHECKIN_COMMANDS)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -73,6 +79,9 @@ volatile uint32_t readings_sent_to_ground = 0;
 volatile bool system_healthy = true;
 QueueHandle_t command_queue;
 volatile uint32_t commands_handled = 0;
+EventGroupHandle_t checkins;
+volatile uint32_t watchdog_kicks = 0;
+volatile uint32_t watchdog_misses = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -149,33 +158,40 @@ static void sensor_task(void *argument)
       }
     }
 
+    xEventGroupSetBits(checkins, CHECKIN_SENSOR);
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
-static void logging_task(void *argument) 
+static void logging_task(void *argument)
 {
-  for(;;) 
+  for (;;)
   {
     processed_reading_t reading;
-    if (xQueueReceive(log_queue, &reading, portMAX_DELAY) == pdPASS) 
+
+    if (xQueueReceive(log_queue, &reading, pdMS_TO_TICKS(500)) == pdPASS)
     {
       sd_log(&reading);
-      xQueueSend(telemetry_queue, &reading, 0); 
+      xQueueSend(telemetry_queue, &reading, 0);
       readings_logged++;
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
     }
+
+    xEventGroupSetBits(checkins, CHECKIN_LOGGING);
   }
 }
-static void telemetry_task(void *argument) 
+static void telemetry_task(void *argument)
 {
-  for(;;) 
+  for (;;)
   {
     processed_reading_t reading;
-    if (xQueueReceive(telemetry_queue, &reading, portMAX_DELAY) == pdPASS) 
+
+    if (xQueueReceive(telemetry_queue, &reading, pdMS_TO_TICKS(500)) == pdPASS)
     {
       radio_send(&reading);
       readings_sent_to_ground++;
     }
+
+    xEventGroupSetBits(checkins, CHECKIN_TELEMETRY);
   }
 }
 static bool core_health_ok(void) 
@@ -187,6 +203,7 @@ static void health_task(void *argument)
   for(;;) 
   {
     system_healthy = core_health_ok();
+    xEventGroupSetBits(checkins, CHECKIN_HEALTH);
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
@@ -200,10 +217,34 @@ static void command_task(void *argument)
   {
     command_t command;
 
-    if (xQueueReceive(command_queue, &command, portMAX_DELAY) == pdPASS)
+    if (xQueueReceive(command_queue, &command, pdMS_TO_TICKS(500)) == pdPASS)
     {
       execute_command(&command);
       commands_handled++;
+    }
+
+    xEventGroupSetBits(checkins, CHECKIN_COMMANDS);
+  }
+}
+static void kick_hardware_watchdog(void)
+{
+
+}
+
+static void watchdog_task(void *argument)
+{
+  for (;;)
+  {
+    EventBits_t bits = xEventGroupWaitBits(checkins, CHECKIN_ALL, pdTRUE, pdTRUE, pdMS_TO_TICKS(1000));
+
+    if ((bits & CHECKIN_ALL) == CHECKIN_ALL)
+    {
+      kick_hardware_watchdog();
+      watchdog_kicks++;
+    }
+    else
+    {
+      watchdog_misses++;
     }
   }
 }
@@ -251,11 +292,15 @@ int main(void)
   log_queue = xQueueCreate(8, sizeof(processed_reading_t));
   telemetry_queue = xQueueCreate(8, sizeof(processed_reading_t));
   command_queue = xQueueCreate(4, sizeof(command_t));
+  checkins = xEventGroupCreate();
+
   xTaskCreate(health_task, "Health Task", 256, NULL, 1, NULL);
   xTaskCreate(sensor_task, "Sensor Task", 256, NULL, 1, NULL);
   xTaskCreate(logging_task, "Logging Task", 256, NULL, 1, NULL);
   xTaskCreate(telemetry_task, "Telemetry Task", 256, NULL, 1, NULL);
   xTaskCreate(command_task, "Command Task", 256, NULL, 1, NULL);
+  xTaskCreate(watchdog_task, "Watchdog Task", 256, NULL, 2, NULL);
+
   vTaskStartScheduler();
   /* USER CODE END 2 */
 
