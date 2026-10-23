@@ -24,15 +24,26 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include <stdbool.h>
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef struct {
-  uint32_t timestamp_ms;
-  int32_t pressure_pa;
-} sensor_reading_t;
+typedef struct
+{
+    uint32_t timestamp_ms;
+    int32_t pressure_raw;
+    int32_t accel_raw[3];
+} raw_reading_t;
+
+typedef struct
+{
+    uint32_t timestamp_ms;
+    bool valid;
+    int32_t altitude_cm;
+    int32_t accel_mg[3];
+} processed_reading_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -48,9 +59,11 @@ typedef struct {
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-QueueHandle_t sensor_queue;
+QueueHandle_t log_queue;
 volatile uint32_t readings_sent = 0;
 volatile uint32_t readings_logged = 0;
+QueueHandle_t telemetry_queue;
+volatile uint32_t readings_sent_to_ground = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,15 +74,65 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void start_readings(void)
+{
+
+}
+static bool get_raw_readings(raw_reading_t *raw)
+{
+  raw->timestamp_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
+  raw->pressure_raw = 101325;
+  raw->accel_raw[0] = 0;
+  raw->accel_raw[1] = 0;
+  raw->accel_raw[2] = 1000;
+  return true;
+}
+static bool validate(const raw_reading_t *raw)
+{
+  return raw->pressure_raw > 1000 && raw->pressure_raw < 120000;
+}
+static void process(const raw_reading_t *raw, processed_reading_t *out)
+{
+  out->timestamp_ms = raw->timestamp_ms;
+  out->valid = true;
+  out->altitude_cm = 0;
+  out->accel_mg[0] = raw->accel_raw[0];
+  out->accel_mg[1] = raw->accel_raw[1];
+  out->accel_mg[2] = raw->accel_raw[2];
+}
+static void sd_log(const processed_reading_t *reading)
+{
+
+}
+static void radio_send(const processed_reading_t *reading)
+{
+
+}
 static void sensor_task(void *argument) 
 {
-  for(;;) 
+  start_readings();
+  for(;;)
   {
-    sensor_reading_t reading;
-    reading.timestamp_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
-    reading.pressure_pa = 101325;
-    xQueueSend(sensor_queue, &reading, portMAX_DELAY);
-    readings_sent++;
+    raw_reading_t raw;
+    processed_reading_t processed;
+    if (get_raw_readings(&raw))
+    {
+      if (validate(&raw))
+      {
+        process(&raw, &processed);
+      }
+      else
+      {
+        processed.timestamp_ms = raw.timestamp_ms;
+        processed.valid = false;
+        processed.altitude_cm = 0;
+        processed.accel_mg[0] = raw.accel_raw[0];
+        processed.accel_mg[1] = raw.accel_raw[1];
+        processed.accel_mg[2] = raw.accel_raw[2];
+      }
+      xQueueSend(log_queue, &processed, portMAX_DELAY);
+      readings_sent++;
+    }
     vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
@@ -77,11 +140,25 @@ static void logging_task(void *argument)
 {
   for(;;) 
   {
-    sensor_reading_t reading;
-    if (xQueueReceive(sensor_queue, &reading, portMAX_DELAY) == pdPASS) 
+    processed_reading_t reading;
+    if (xQueueReceive(log_queue, &reading, portMAX_DELAY) == pdPASS) 
     {
+      sd_log(&reading);
+      xQueueSend(telemetry_queue, &reading, 0); 
       readings_logged++;
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
+    }
+  }
+}
+static void telemetry_task(void *argument) 
+{
+  for(;;) 
+  {
+    processed_reading_t reading;
+    if (xQueueReceive(telemetry_queue, &reading, portMAX_DELAY) == pdPASS) 
+    {
+      radio_send(&reading);
+      readings_sent_to_ground++;
     }
   }
 }
@@ -126,9 +203,11 @@ int main(void)
   led.Pull = GPIO_NOPULL;
   led.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &led);
-  sensor_queue = xQueueCreate(8, sizeof(sensor_reading_t));
+  log_queue = xQueueCreate(8, sizeof(processed_reading_t));
+  telemetry_queue = xQueueCreate(8, sizeof(processed_reading_t));
   xTaskCreate(sensor_task, "Sensor Task", 256, NULL, 1, NULL);
   xTaskCreate(logging_task, "Logging Task", 256, NULL, 1, NULL);
+  xTaskCreate(telemetry_task, "Telemetry Task", 256, NULL, 1, NULL);
   vTaskStartScheduler();
 
   /* USER CODE END 2 */
