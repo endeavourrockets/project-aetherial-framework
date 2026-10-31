@@ -21,17 +21,46 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "event_groups.h"
+#include <stdbool.h>
 
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef struct
+{
+    uint32_t timestamp_ms;
+    int32_t pressure_raw;
+    int32_t accel_raw[3];
+} raw_reading_t;
 
+typedef struct
+{
+    uint32_t timestamp_ms;
+    bool valid;
+    int32_t altitude_cm;
+    int32_t accel_mg[3];
+} processed_reading_t;
+
+typedef struct 
+{
+  uint8_t id;
+  uint8_t argument;
+} command_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CHECKIN_HEALTH    (1u << 0)
+#define CHECKIN_SENSOR    (1u << 1)
+#define CHECKIN_LOGGING   (1u << 2)
+#define CHECKIN_TELEMETRY (1u << 3)
+#define CHECKIN_COMMANDS  (1u << 4)
+#define CHECKIN_ALL       (CHECKIN_HEALTH | CHECKIN_SENSOR | CHECKIN_LOGGING | CHECKIN_TELEMETRY | CHECKIN_COMMANDS)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -42,7 +71,17 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+QueueHandle_t log_queue;
+volatile uint32_t readings_sent = 0;
+volatile uint32_t readings_logged = 0;
+QueueHandle_t telemetry_queue;
+volatile uint32_t readings_sent_to_ground = 0;
+volatile bool system_healthy = true;
+QueueHandle_t command_queue;
+volatile uint32_t commands_handled = 0;
+EventGroupHandle_t checkins;
+volatile uint32_t watchdog_kicks = 0;
+volatile uint32_t watchdog_misses = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -53,6 +92,162 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+static void start_readings(void)
+{
+
+}
+static bool get_raw_readings(raw_reading_t *raw)
+{
+  raw->timestamp_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
+  raw->pressure_raw = 101325;
+  raw->accel_raw[0] = 0;
+  raw->accel_raw[1] = 0;
+  raw->accel_raw[2] = 1000;
+  return true;
+}
+static bool validate(const raw_reading_t *raw)
+{
+  return raw->pressure_raw > 1000 && raw->pressure_raw < 120000;
+}
+static void process(const raw_reading_t *raw, processed_reading_t *out)
+{
+  out->timestamp_ms = raw->timestamp_ms;
+  out->valid = true;
+  out->altitude_cm = 0;
+  out->accel_mg[0] = raw->accel_raw[0];
+  out->accel_mg[1] = raw->accel_raw[1];
+  out->accel_mg[2] = raw->accel_raw[2];
+}
+static void sd_log(const processed_reading_t *reading)
+{
+
+}
+static void radio_send(const processed_reading_t *reading)
+{
+
+}
+static void sensor_task(void *argument)
+{
+  start_readings();
+
+  for (;;)
+  {
+    raw_reading_t raw;
+    processed_reading_t processed;
+
+    if (system_healthy)
+    {
+      if (get_raw_readings(&raw))
+      {
+        if (validate(&raw))
+        {
+          process(&raw, &processed);
+        }
+        else
+        {
+          processed.timestamp_ms = raw.timestamp_ms;
+          processed.valid = false;
+          processed.altitude_cm = 0;
+          processed.accel_mg[0] = raw.accel_raw[0];
+          processed.accel_mg[1] = raw.accel_raw[1];
+          processed.accel_mg[2] = raw.accel_raw[2];
+        }
+
+        xQueueSend(log_queue, &processed, portMAX_DELAY);
+        readings_sent++;
+      }
+    }
+
+    xEventGroupSetBits(checkins, CHECKIN_SENSOR);
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+static void logging_task(void *argument)
+{
+  for (;;)
+  {
+    processed_reading_t reading;
+
+    if (xQueueReceive(log_queue, &reading, pdMS_TO_TICKS(500)) == pdPASS)
+    {
+      sd_log(&reading);
+      xQueueSend(telemetry_queue, &reading, 0);
+      readings_logged++;
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);
+    }
+
+    xEventGroupSetBits(checkins, CHECKIN_LOGGING);
+  }
+}
+static void telemetry_task(void *argument)
+{
+  for (;;)
+  {
+    processed_reading_t reading;
+
+    if (xQueueReceive(telemetry_queue, &reading, pdMS_TO_TICKS(500)) == pdPASS)
+    {
+      radio_send(&reading);
+      readings_sent_to_ground++;
+    }
+
+    xEventGroupSetBits(checkins, CHECKIN_TELEMETRY);
+  }
+}
+static bool core_health_ok(void) 
+{
+  return true;
+}
+static void health_task(void *argument) 
+{
+  for(;;) 
+  {
+    system_healthy = core_health_ok();
+    xEventGroupSetBits(checkins, CHECKIN_HEALTH);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+static void execute_command(const command_t *command)
+{
+
+}
+static void command_task(void *argument)
+{
+  for (;;)
+  {
+    command_t command;
+
+    if (xQueueReceive(command_queue, &command, pdMS_TO_TICKS(500)) == pdPASS)
+    {
+      execute_command(&command);
+      commands_handled++;
+    }
+
+    xEventGroupSetBits(checkins, CHECKIN_COMMANDS);
+  }
+}
+static void kick_hardware_watchdog(void)
+{
+
+}
+
+static void watchdog_task(void *argument)
+{
+  for (;;)
+  {
+    EventBits_t bits = xEventGroupWaitBits(checkins, CHECKIN_ALL, pdTRUE, pdTRUE, pdMS_TO_TICKS(1000));
+
+    if ((bits & CHECKIN_ALL) == CHECKIN_ALL)
+    {
+      kick_hardware_watchdog();
+      watchdog_kicks++;
+    }
+    else
+    {
+      watchdog_misses++;
+    }
+  }
+}
 
 /* USER CODE END 0 */
 
@@ -86,6 +281,27 @@ int main(void)
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
 
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  GPIO_InitTypeDef led = {0};
+  led.Pin = GPIO_PIN_8;
+  led.Mode = GPIO_MODE_OUTPUT_PP;
+  led.Pull = GPIO_NOPULL;
+  led.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &led);
+  log_queue = xQueueCreate(8, sizeof(processed_reading_t));
+  telemetry_queue = xQueueCreate(8, sizeof(processed_reading_t));
+  command_queue = xQueueCreate(4, sizeof(command_t));
+  checkins = xEventGroupCreate();
+
+  xTaskCreate(health_task, "Health Task", 256, NULL, 1, NULL);
+  xTaskCreate(sensor_task, "Sensor Task", 256, NULL, 1, NULL);
+  xTaskCreate(logging_task, "Logging Task", 256, NULL, 1, NULL);
+  xTaskCreate(telemetry_task, "Telemetry Task", 256, NULL, 1, NULL);
+  xTaskCreate(command_task, "Command Task", 256, NULL, 1, NULL);
+  xTaskCreate(watchdog_task, "Watchdog Task", 256, NULL, 2, NULL);
+
+  vTaskStartScheduler();
   /* USER CODE END 2 */
 
   /* Infinite loop */
