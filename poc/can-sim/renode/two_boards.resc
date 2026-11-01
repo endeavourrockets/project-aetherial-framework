@@ -1,0 +1,41 @@
+:name: CAN PoC step 3a: OBC and Experiment boards on one CAN bus
+:description: two STM32F405 machines on CANHub busA. obc sends FLIGHT_PHASE (10 Hz) and TIME_SYNC (1 Hz), experiment receives and prints them.
+:
+: how to run (from the top folder, the one with firmware/ and renode/):
+:   make -C firmware
+:   renode renode/two_boards.resc     then type: start
+:
+:   +--- obc ---+               +--- experiment ---+
+:   |  can1 ----+---- busA -----+---- can1         |
+:   |  can2     |               |     can2         |   (can2 not connected here)
+:   +-----------+               +------------------+
+:
+: each machine is a separate STM32F405 with its own firmware, CPU and clock.
+: the hub is made at emulation level, outside both machines, so each machine
+: can plug its can1 into the same hub --> that's how two chips end up on one bus
+: "mach set obc" or "mach set experiment" in the monitor switches between them
+
+: redundant/socketcan_bridge set their own $art before including this
+$art?=@renode/art/two_boards.py
+$obc_elf?=@firmware/build/obc.elf
+$exp_elf?=@firmware/build/experiment.elf
+
+emulation CreateCANHub "busA"
+
+mach create "obc"
+machine LoadPlatformDescription @renode/stm32f405.repl
+sysbus LoadELF $obc_elf
+cpu VectorTableOffset 0x08000000
+connector Connect sysbus.can1 busA
+showAnalyzer sysbus.usart2
+
+mach create "experiment"
+machine LoadPlatformDescription @renode/stm32f405.repl
+sysbus LoadELF $exp_elf
+cpu VectorTableOffset 0x08000000
+connector Connect sysbus.can1 busA
+showAnalyzer sysbus.usart2
+
+mach clear
+
+include $art

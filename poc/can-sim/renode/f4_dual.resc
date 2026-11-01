@@ -1,0 +1,39 @@
+:name: CAN PoC step 2: one STM32F405, CAN1 -> CAN2
+:description: CAN1 sends FLIGHT_PHASE (id 0x100) at 10 Hz, CAN2 receives it and prints it on USART2.
+:
+: how to run (from the top folder, the one with firmware/ and renode/):
+:   make -C firmware
+:   renode renode/f4_dual.resc then type: start
+:   renode/run_can_tests.sh headless run with checks
+:
+: one machine (one chip), both of its CAN controllers on the same virtual bus:
+:
+:     +---------- f4 ----------+
+:     |  can1 ----+            |
+:     |           |  busA      |   busA is a Renode CANHub --> a virtual
+:     |  can2 ----+            |   CAN bus with no wires and no bit timing
+:     +------------------------+
+
+using sysbus
+$name?="f4"
+mach create $name
+machine LoadPlatformDescription @renode/stm32f405.repl
+
+$elf?=@firmware/build/f4_dual.elf
+macro reset
+"""
+    sysbus LoadELF $elf
+    # flash isn't mirrored at address 0 here --> tell the CPU where the vector table is
+    cpu VectorTableOffset 0x08000000
+"""
+runMacro $reset
+
+# make the bus, then plug both controllers of this chip into it
+# --> whatever can1 sends, can2 gets
+emulation CreateCANHub "busA"
+connector Connect sysbus.can1 busA
+connector Connect sysbus.can2 busA
+
+showAnalyzer usart2
+
+include @renode/art/f4_dual.py

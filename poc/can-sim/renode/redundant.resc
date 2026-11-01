@@ -1,0 +1,29 @@
+:name: CAN PoC step 3b: OBC and Experiment on two redundant CAN buses
+:description: two_boards.resc plus a second CANHub busB joining both CAN2 controllers. every OBC message goes out on both buses, the experiment board drops the second copy.
+:
+: how to run (from the top folder, the one with firmware/ and renode/):
+:   renode renode/redundant.resc then type: start
+:
+:   +--- obc ---+               +--- experiment ---+
+:   |  can1 ----+---- busA -----+---- can1         |
+:   |  can2 ----+---- busB -----+---- can2         |
+:   +-----------+               +------------------+
+:
+: two hubs = two separate buses, a frame on busA never shows up on busB.
+: so the experiment gets every OBC message twice, once per bus, and has to
+: drop the second copy (experiment/main.c)
+:
+: to fake a broken bus A at any time (the experiment keeps getting data on B):
+:   mach set "obc"
+:   connector Disconnect sysbus.can1 busA
+
+$art?=@renode/art/redundant.py
+include @renode/two_boards.resc
+
+# second bus --> plug the can2 of each machine into it
+emulation CreateCANHub "busB"
+mach set "obc"
+connector Connect sysbus.can2 busB
+mach set "experiment"
+connector Connect sysbus.can2 busB
+mach clear

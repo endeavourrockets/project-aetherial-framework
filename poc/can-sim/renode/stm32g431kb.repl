@@ -1,0 +1,114 @@
+// stm32g431kb.repl --> small Renode platform for the STM32G431KB (NUCLEO-G431KB)
+// Renode 1.17 has no STM32G4 platform, so this only models what the payload's
+// bare metal build touches (assumption A-21 in the payload PROGRESS.md):
+// cortex-m4f core, flash, 32 KiB SRAM, NVIC with SysTick at the 16 MHz HSI,
+// USART2 (same IP as STM32F7/L4/G0), GPIOA/GPIOB, the user LED on PB8, and
+// FDCAN1 for the CAN PoC (bottom of the file). RCC is only modelled far
+// enough for ST's HAL clock set up to finish (rcc block below), nothing is
+// really clocked
+//
+// limitation: SysTick always counts at 16 MHz here. if CubeMX turns the PLL on
+// (e.g. 170 MHz), HAL loads SysTick for 170 MHz and time in Renode runs about
+// 10.6 times slower than it should --> change systickFrequency below to the
+// clock CubeMX sets
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 16000000
+    IRQ -> cpu@0
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x20000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x8000
+
+// RCC, reset and clock control (RM0440 section 7.4)
+// Renode workaround: plain memory isn't enough for ST's HAL. after turning a
+// clock on, HAL_RCC_OscConfig() and HAL_RCC_ClockConfig() wait for its ready
+// bit, time out and end up in Error_Handler(). this small python model keeps
+// every value written and, on a read, sets the ready bit of every clock that's
+// switched on --> the clocks look like they start straight away
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    # reset values: CR = HSION + HSIRDY, CFGR = HSI16 selected,
+    # PLLCFGR = PLLN of 16 (RM0440 7.4.1, 7.4.3, 7.4.4)
+    regs = {0x00: 0x00000500, 0x08: 0x00000005, 0x0C: 0x00001000}
+else:
+    off = request.Offset
+    if request.IsWrite:
+        regs[off] = request.Value
+    else:
+        v = regs.get(off, 0)
+        if off == 0x00:
+            # CR: HSIRDY (10) follows HSION (8), HSERDY (17) follows
+            # HSEON (16), PLLRDY (25) follows PLLON (24)
+            v &= ~((1 << 10) | (1 << 17) | (1 << 25))
+            if v & (1 << 8): v |= 1 << 10
+            if v & (1 << 16): v |= 1 << 17
+            if v & (1 << 24): v |= 1 << 25
+        elif off == 0x08:
+            # CFGR: SWS [3:2] (clock in use) copies SW [1:0] (clock asked for)
+            v = (v & ~0xC) | ((v & 0x3) << 2)
+        elif off == 0x90 or off == 0x94 or off == 0x98:
+            # BDCR LSERDY, CSR LSIRDY, CRRCR HSI48RDY (bit 1) follow
+            # the matching ON bit (bit 0)
+            v = (v & ~0x2) | ((v & 0x1) << 1)
+        request.Value = v
+'''
+
+// PWR and the flash interface --> HAL writes the voltage range and flash wait
+// states here and reads them back to check. plain memory gives back what was
+// written, that's enough. PWR_SR2.VOSF reads 0 --> voltage scaling done at once
+pwr: Memory.MappedMemory @ sysbus 0x40007000
+    size: 0x400
+
+flashInterface: Memory.MappedMemory @ sysbus 0x40022000
+    size: 0x400
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 16000000
+    IRQ -> nvic@38
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x48000000, +0x400>
+    modeResetValue: 0xABFFFFFF
+    numberOfAFs: 16
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x48000400, +0x400>
+    modeResetValue: 0xFFFFFEBF
+    numberOfAFs: 16
+
+led: Miscellaneous.LED @ gpioPortB 8
+
+gpioPortB:
+    8 -> led@0
+
+// FDCAN1 (RM0440 chapter 44), added for the CAN PoC
+// (poc/can-sim/firmware). the payload firmware doesn't use it yet
+//
+// Renode workaround: there's no G4 variant of Renode's STM32_FDCAN model, so
+// the L5 one is used --> G4 and L5 FDCAN have the same registers and the same
+// fixed message RAM layout. only the addresses and IRQs are G4 specific:
+//   FDCAN1 registers 0x40006400, message RAM (SRAMCAN) 0x4000A400,
+//   FDCAN1_IT0 = IRQ 21, FDCAN1_IT1 = IRQ 22
+// (series .G4 crashes Renode 1.17, see the report)
+// not modelled: test/loopback modes (TEST.LBCK, CCCR.MON), bit timing, error
+// counters --> see the report
+//
+// like the F405 controllers, fdcan1 has no pins here. a .resc plugs it into a
+// CANHub (connector Connect sysbus.fdcan1 <hub>) and that hub is the bus
+fdcanRAM: Memory.ArrayMemory @ sysbus 0x4000A400
+    size: 0x400
+
+fdcan1: CAN.STM32_FDCAN @ sysbus 0x40006400
+    series: .L5
+    messageRam: fdcanRAM
+    Int0 -> nvic@21
+    Int1 -> nvic@22

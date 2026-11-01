@@ -1,0 +1,34 @@
+:name: CAN PoC step 4: redundant buses plus a bridge from bus A to the PC
+:description: redundant.resc plus Renode's SocketCAN bridge on busA, so Linux tools (candump, cansend, Wireshark) see the simulated bus as vcan0.
+:
+: Linux only. needs a virtual CAN interface on the PC first (once per boot, needs sudo):
+:   sudo modprobe vcan
+:   sudo ip link add dev vcan0 type vcan
+:   sudo ip link set up vcan0
+:   sudo apt install can-utils (optional, for candump / cansend)
+:
+: how to run (from the top folder, the one with firmware/ and renode/):
+:   renode renode/socketcan_bridge.resc then type: start
+:   candump -td vcan0 in another terminal
+:   cansend vcan0 100#0300DEADBEEF send a frame in --> the experiment prints it
+:
+:   obc.can1 ----+---- busA ----+---- experiment.can1
+:                |              |
+:                +-- vcanA -----+--> Linux vcan0
+:   obc.can2 --------- busB --------- experiment.can2
+:
+: the bridge vcanA is just one more thing plugged into busA, it passes frames
+: between the hub and the Linux interface both ways
+: to see bus B too, make vcan1 the same way and uncomment the last 3 lines
+
+$art=@renode/art/socketcan_bridge.py
+include @renode/redundant.resc
+
+# in Renode the bridge has to belong to a machine, which one doesn't matter
+mach set "obc"
+machine CreateSocketCANBridge "vcanA" "vcan0"
+connector Connect vcanA busA
+
+# machine CreateSocketCANBridge "vcanB" "vcan1"
+# connector Connect vcanB busB
+mach clear

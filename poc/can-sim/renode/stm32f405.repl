@@ -1,0 +1,19 @@
+// stm32f405.repl --> STM32F405RGT6 for the CAN PoC
+//
+// how the CAN side fits together:
+// Renode's own stm32f4.repl (the using line below) already has both bxCAN
+// controllers inside the chip
+//   can1 --> CAN.STMCAN at 0x40006400, IRQs 19-22 (TX, RX0, RX1, SCE)
+//   can2 --> CAN.STMCAN at 0x40006800, IRQs 63-66, "master: can1" so it uses
+//            CAN1's 28 shared filter banks, same as the real chip
+// a controller here has no pins and no wires. the .resc scripts plug each one
+// into a CANHub (a virtual bus) with "connector Connect sysbus.can1 busA",
+// and every frame one controller sends goes to all the others on that hub
+//
+// the only change from stm32f4.repl --> SysTick counts at 16 MHz (the HSI
+// clock the F405 runs on after reset, the PoC never changes it) instead of
+// Renode's default 72 MHz, so 1 ms in the firmware is 1 ms of virtual time
+using "platforms/cpus/stm32f4.repl"
+
+nvic:
+    systickFrequency: 16000000

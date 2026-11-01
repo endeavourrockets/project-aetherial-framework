@@ -1,0 +1,36 @@
+:name: CAN PoC step 5: NUCLEO-G431KB FDCAN1 loopback
+:description: runs firmware/build/g431_loopback.elf on renode/stm32g431kb.repl (which has FDCAN1). a CANHub with loopback on echoes every frame back, standing in for the FDCAN internal loopback mode that Renode doesn't model.
+:
+: how to run (from the top folder, the one with firmware/ and renode/):
+:   make -C firmware
+:   renode renode/g431_loopback.resc then type: start
+:   expected --> the FDCAN clock and bit rate read back from the registers,
+:   then 20 lines "FDCAN1 loopback RX id=0x100 ... OK" and "LOOPBACK PASS"
+:
+: external loopback build (acts the same in Renode, on hardware it also
+: drives PA12) --> set $elf before including this script:
+:   $elf=@firmware/build/g431_ext_loopback.elf
+:   include @renode/g431_loopback.resc
+
+using sysbus
+$name?="g431"
+mach create $name
+machine LoadPlatformDescription @renode/stm32g431kb.repl
+
+$elf?=@firmware/build/g431_loopback.elf
+macro reset
+"""
+    sysbus LoadELF $elf
+    cpu VectorTableOffset 0x08000000
+"""
+runMacro $reset
+
+# Renode workaround: the FDCAN model ignores TEST.LBCK, so the chip can't hear
+# itself. a hub made with loopback = true sends every frame back to the
+# controller that sent it --> same result as the real loopback
+emulation CreateCANHub "loop" true
+connector Connect sysbus.fdcan1 loop
+
+showAnalyzer usart2
+
+include @renode/art/g431_loopback.py
