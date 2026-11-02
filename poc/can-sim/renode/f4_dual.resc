@@ -37,3 +37,25 @@ connector Connect sysbus.can2 busA
 showAnalyzer usart2
 
 include @renode/art/f4_dual.py
+
+# ⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣤⡤⠤⢤⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⢀⡤⠄⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⠂⠤⣀⠀⠀⠀⠀⠀
+# ⠀⠀⢀⡜⠋⠀⠀⢀⠀⡀⠀⠀⠀⠀⢀⣠⠤⠤⠤⠤⢤⣈⠓⣄⠀⠀⠀
+# ⠀⢀⣜⠀⢀⣠⠜⣛⣣⣤⣤⣟⣤⣀⣠⣣⣼⣼⣿⣿⣧⣤⣛⢿⣧⠀⠀
+# ⠀⢨⢏⠴⠮⠗⠚⠙⠉⠉⢉⣿⣿⣿⠇⠁⠀⠀⠀⠀⠈⣉⣿⣦⡝⣷⠀
+# ⢰⡷⣿⡀⠀⣀⣀⣠⣄⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⡆
+# ⠸⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡯⠉⠫⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⢀⡯
+# ⢠⠸⣿⣿⣿⣿⣿⣿⡿⢿⡩⠎⠁⠀⠀⠈⠺⣝⡿⢿⣿⣿⠿⢏⡡⠏⠏
+# ⠘⢗⠬⣙⣋⣛⡍⠵⠒⠉⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠑⠂⠋⠁⣀⡞⠀
+# ⠀⠈⢧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡴⠋⠀⠀
+# ⠀⠀⠀⠉⠲⠤⣀⠀⠀⠀⠀⠀⠀⢢⡀⣰⠀⠀⠀⣀⡤⠖⠉⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠉⠛⠒⠀⢰⠒⣶⢲⡆⠐⠚⠋⠀⡔⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠀⢧⡀⠀⠀⢀⣀⣀⡀⠀⠀⣰⠃⠀⠀⠀⠀⠀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢍⠘⠓⣦⠎⡆⠤⠐⢫⠃⡀⠀⠀⡀⠀⡀⠀
+# ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣆⡤⠤⠶⠶⠶⢤⡽⠂⠀⠀⠀⠀⠀⠀⠀
+
+
+
+# for anyone that may be chekcing my code, this explanation part is on how to execute, and it was checked with AI, and the diagrams were made by it too
+# but were double checked by me
+# that is why there are so little grammar and writing mistakes, yeh

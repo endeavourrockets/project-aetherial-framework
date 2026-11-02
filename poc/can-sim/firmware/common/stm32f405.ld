@@ -2,7 +2,7 @@
  * stm32f405.ld --> linker script for the CAN PoC on the STM32F405RGT6
  * tells the linker where flash and RAM are and in what order to put things.
  * the F405RG has 1 MiB flash at 0x08000000 and 112 KiB + 16 KiB of SRAM
- * back to back at 0x20000000 (RM0090 section 2.3)
+ * back to back at 0x20000000 (づ｡◕‿‿◕｡)づ
  */
 ENTRY(Reset_Handler)
 

@@ -10,10 +10,10 @@
  *
  * in Renode CAN1 and CAN2 are joined by a CANHub (renode/f4_dual.resc).
  * on a real board both transceivers would go on the same CANH/CANL pair,
- * with a 120 ohm resistor at each end of the bus
+ * with a 120 ohm resistor at each end of the bus, I think
  *
  * expected console:
- *   CAN PoC f4_dual: CAN1 -> CAN2 at 500 kbit/s
+ *   CAN PoC f4_dual: CAN1 ->CAN2 at 500 kbit/s
  *   [  0.100] CAN2 RX id=0x100 dlc=6 phase=PAD seq=0 obc_ms=100
  *   ...
  */
@@ -102,3 +102,5 @@ int main(void)
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠳⣇⣋⡅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠁⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 */
+
+/*You measure my life in hours, and I serve you by expiring. I’m quick when I’m thin and slow when I’m fat. The wind is my enemy, guess*/

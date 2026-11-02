@@ -4,22 +4,22 @@
  *
  * gets FLIGHT_PHASE (0x100) and TIME_SYNC (0x080) on both buses, CAN1 = bus A
  * and CAN2 = bus B. the OBC sends everything on both buses so each message
- * normally comes in twice --> the first copy is used (RX), the second is
+ * normally comes in twice -->the first copy is used (RX), the second is
  * spotted and ignored (DUP). if a bus dies, the copies from the other bus
  * aren't duplicates anymore and get used instead, with no gap
  *
  * duplicate rule (is_duplicate below): same id and exactly the same data
  * bytes as the last frame used with that id, arriving within DUP_WINDOW_MS.
  * this only works because every OBC message has something that changes each
- * time (a counter or a time stamp) --> two different messages never have the
+ * time (a counter or a time stamp) -->two different messages never have the
  * same bytes. so every message sent on both buses needs a changing field
  *
  * console lines:
- *   RX A FLIGHT_PHASE phase=BOOST seq=12 obc_ms=1200   used, came first on bus A
- *   DUP B 0x100 seq=12                                 same message via bus B, ignored
- *   RX B TIME_SYNC obc_ms=2000 utc=0 offset_ms=0       offset = OBC time minus our time
- *   PHASE -> BOOST                                     what the payload would act on
- *   EXP STATS rxA=.. rxB=.. used=.. dup=..             once a second
+ *   RX A FLIGHT_PHASE phase=BOOST seq=12 obc_ms=1200 used, came first on bus A
+ *   DUP B 0x100 seq=12 same message via bus B, ignored
+ *   RX B TIME_SYNC obc_ms=2000 utc=0 offset_ms=0 offset = OBC time minus our time
+ *   PHASE -> BOOST what the payload would act on
+ *   EXP STATS rxA=.. rxB=.. used=.. dup=.. once a second
  */
 #include <stdbool.h>
 
@@ -78,7 +78,7 @@ static bool is_duplicate(const can_frame_t *f, uint32_t now)
         l->t_ms = now;
         return false;
     }
-    return false;   /* an id we don't track --> never counted as a copy */
+    return false; /* an id we don't track --> never counted as a copy */
 }
 
 static void handle(const can_frame_t *f, int bus)
@@ -200,3 +200,4 @@ int main(void)
 ⠀⠺⣧⡀⢠⣀⠀⠀⣀⣟⠛⠛⣧⣄⡀⠀⠀⣸⡇⠀⣿⠉⠀⠀⠀⠀
 ⠀⠀⠀⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠛⠀⠀⠀⠀⠀⠀ 
 */
+/*a congregation of apes*/

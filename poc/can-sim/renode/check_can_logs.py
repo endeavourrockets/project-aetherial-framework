@@ -3,11 +3,11 @@
 run_can_tests.sh calls it. prints "ok ..." / "FAIL ..." lines and exits 1 if
 anything failed
 
-    check_can_logs.py f4_dual UART_LOG
-    check_can_logs.py two_boards EXP_LOG
-    check_can_logs.py redundant OBC_LOG EXP_LOG CUT_SECONDS
-    check_can_logs.py g431 UART_LOG internal|external CLOCK_HZ
-    check_can_logs.py bridge EXP_LOG CANDUMP_LOG
+ check_can_logs.py f4_dual UART_LOG
+ check_can_logs.py two_boards EXP_LOG
+ check_can_logs.py redundant OBC_LOG EXP_LOG CUT_SECONDS
+ check_can_logs.py g431 UART_LOG internal|external CLOCK_HZ
+ check_can_logs.py bridge EXP_LOG CANDUMP_LOG
 """
 import re
 import sys

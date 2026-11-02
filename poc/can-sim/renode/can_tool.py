@@ -3,8 +3,8 @@
 the python standard library so the SocketCAN bridge can be tested on a PC
 without can-utils
 
-    python3 renode/can_tool.py dump vcan0 [seconds]      print frames like candump
-    python3 renode/can_tool.py send vcan0 100#0306AABB   send one frame like cansend
+ python3 renode/can_tool.py dump vcan0 [seconds] print frames like candump
+ python3 renode/can_tool.py send vcan0 100#0306AABB send one frame like cansend
 
 frame format for send --> hex id, '#', then 0..8 data bytes in hex
 Linux only (SocketCAN). the vcan interface has to exist already (sudo

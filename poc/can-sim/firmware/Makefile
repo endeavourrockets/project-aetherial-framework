@@ -3,7 +3,7 @@
 #   make build every program into build/*.elf
 #   make test build, then run every Renode CAN demo and check the output
 #   make clean
-#   make CROSS=/path/to/arm-none-eabi-   use another toolchain (default: the one on PATH)
+#   make CROSS=/path/to/arm-none-eabi- use another toolchain (default: the one on PATH)
 #
 # programs:
 #   f4_dual STM32F405: CAN1 sends FLIGHT_PHASE, CAN2 receives it (step 2)
@@ -30,7 +30,7 @@ F4_COMMON := common/startup_cm4.c common/board_f4.c common/bxcan.c common/print.
 G4_COMMON := common/startup_cm4.c common/board_g431.c common/fdcan_poc.c common/print.c
 F4_LD := common/stm32f405.ld
 # copy of the payload's G431 linker script (firmware/Payload/platform/renode/),
-# kept here so this folder builds on its own
+# kept here so this folder builds on its own, not my PC one
 G4_LD := common/stm32g431kb.ld
 
 PROGS := f4_dual obc experiment g431_loopback g431_ext_loopback
@@ -61,7 +61,7 @@ $(BUILD)/obj/g431_ext_loopback/main.o: g431_loopback/main.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -DLOOPBACK_EXTERNAL=1 -c $< -o $@
 
-# memcpy/memset the compiler may call by itself, copy of the payload's libc_min.c
+# memcpy/memset the compiler may call by itself, copy of the payload's libc_min.c, :)
 $(BUILD)/obj/libc_min.o: common/libc_min.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@

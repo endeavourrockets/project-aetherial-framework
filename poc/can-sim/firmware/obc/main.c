@@ -1,8 +1,9 @@
 /*
- * obc/main.c --> step 3 of the CAN PoC: a fake OBC (on board computer)
+ * obc/main.c --> step 3 of the CAN PoC: a fake OBC
  *
- * the team's plan --> the OBC owns the flight state and broadcasts it. this
- * pretends to fly (a fixed, fast timeline) and sends
+ * the teams plan (from what I saw on the diagram)--> the OBC owns 
+ * the flight state and broadcasts it. this pretends to fly 
+ * (a fixed, fast timeline) and sends
  *   FLIGHT_PHASE (0x100) every 100 ms and TIME_SYNC (0x080) every 1 s
  * on both buses, CAN1 = bus A and CAN2 = bus B (two redundant buses). the
  * same message goes out on both --> if one bus dies the other still gets it
@@ -140,3 +141,5 @@ int main(void)
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠛⠛⠛⠛⠛⠛⠛⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 
 */
+
+/*“Pretty far-fetched information”, 4 letters*/

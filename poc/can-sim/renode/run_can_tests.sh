@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # run_can_tests.sh --> runs every Renode CAN demo headless and checks the output
 #
-#   renode/run_can_tests.sh          (or: make -C firmware test)
+#   renode/run_can_tests.sh (or: make -C firmware test)
 #
 # tests:
-#   1 f4_dual      one F405, CAN1 --> CAN2 through a CANHub
-#   2 two_boards   obc + experiment on bus A
-#   3 redundant    bus A + bus B, duplicates dropped, bus A cut half way
-#   4 g431         NUCLEO-G431KB FDCAN1 internal loopback (16 MHz HSI)
-#     g431_ext     same in external loopback (g431_ext_loopback.elf)
-#     g431_170mhz  internal loopback with the PLL at 170 MHz --> checks the printed
+#   1 f4_dual one F405, CAN1 --> CAN2 through a CANHub
+#   2 two_boards obc + experiment on bus A
+#   3 redundant bus A + bus B, duplicates dropped, bus A cut half way
+#   4 g431 NUCLEO-G431KB FDCAN1 internal loopback (16 MHz HSI)
+#     g431_ext same in external loopback (g431_ext_loopback.elf)
+#     g431_170mhz internal loopback with the PLL at 170 MHz --> checks the printed
 #                  clock and bit timing follow the real clock
-#   5 bridge       bus A bridged to Linux vcan0 (skipped if it can't be done)
+#   5 bridge bus A bridged to Linux vcan0 (skipped if it can't be done)
 #
 # environment: RENODE = path to renode (default: renode on PATH)
 #              CROSS  = toolchain prefix for the build (default: arm-none-eabi- on PATH)

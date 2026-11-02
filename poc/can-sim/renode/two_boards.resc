@@ -39,3 +39,6 @@ showAnalyzer sysbus.usart2
 mach clear
 
 include $art
+
+
+# include the art (from above), I worked hard, :=0

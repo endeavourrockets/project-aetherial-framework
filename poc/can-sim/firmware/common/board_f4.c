@@ -2,9 +2,9 @@
  * board_f4.c --> STM32F405 start up for the CAN PoC (see board_f4.h)
  *
  * pins (DRAFT, the real PCB pin out isn't decided yet):
- *   PA2  = USART2 TX (console, 115200 8N1)          AF7
- *   PB8  = CAN1 RX, PB9  = CAN1 TX --> bus A         AF9
- *   PB12 = CAN2 RX, PB13 = CAN2 TX --> bus B         AF9
+ *   PA2  = USART2 TX (console, 115200 8N1) AF7
+ *   PB8  = CAN1 RX, PB9  = CAN1 TX --> bus A AF9
+ *   PB12 = CAN2 RX, PB13 = CAN2 TX --> bus B AF9
  * on a real board each CAN TX/RX pair goes to its own transceiver chip (e.g.
  * TJA1051 or SN65HVD230) that drives the CANH/CANL wires. in Renode there are
  * no pins --> the controllers are joined by a CANHub instead (see renode/)
