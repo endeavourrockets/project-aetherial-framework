@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 
-# This is still the G431 development board, not the F405 flight board.
+# OBC firmware for the G431.
 set(CMAKE_PROJECT_NAME firmware)
 add_executable(firmware)
 add_subdirectory(cmake/stm32cubemx)
+target_sources(firmware PRIVATE App/pressure.c)
 
 # Add hand-written application sources here as they are split out of main.c.
 target_include_directories(firmware PRIVATE

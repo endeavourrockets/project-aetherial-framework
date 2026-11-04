@@ -26,6 +26,7 @@
 #include "queue.h"
 #include "event_groups.h"
 #include <stdbool.h>
+#include "pressure.h"
 
 /* USER CODE END Includes */
 
@@ -105,10 +106,6 @@ static bool get_raw_readings(raw_reading_t *raw)
   raw->accel_raw[2] = 1000;
   return true;
 }
-static bool validate(const raw_reading_t *raw)
-{
-  return raw->pressure_raw > 1000 && raw->pressure_raw < 120000;
-}
 static void process(const raw_reading_t *raw, processed_reading_t *out)
 {
   out->timestamp_ms = raw->timestamp_ms;
@@ -139,7 +136,7 @@ static void sensor_task(void *argument)
     {
       if (get_raw_readings(&raw))
       {
-        if (validate(&raw))
+        if (pressure_is_valid(raw.pressure_raw))
         {
           process(&raw, &processed);
         }

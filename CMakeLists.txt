@@ -1,12 +1,24 @@
 cmake_minimum_required(VERSION 3.22)
-project(aetherial LANGUAGES C ASM)
+project(aetherial LANGUAGES C)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+option(AETHERIAL_BUILD_TESTS "Build PC unit tests instead of firmware" OFF)
+if(AETHERIAL_BUILD_TESTS)
+    if(CMAKE_CROSSCOMPILING)
+        message(FATAL_ERROR "Unit tests need a PC compiler, not the Arm toolchain.")
+    endif()
+    enable_testing()
+    add_subdirectory(tests/host)
+    return()
+endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
     message(FATAL_ERROR "Select an Arm toolchain preset (stm32-debug, or your local preset).")
 endif()
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+enable_language(ASM)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

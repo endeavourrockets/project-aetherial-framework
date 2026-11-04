@@ -7,6 +7,16 @@
   },
   "configurePresets": [
     {
+      "name": "host-tests",
+      "displayName": "PC unit tests",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "AETHERIAL_BUILD_TESTS": "ON"
+      }
+    },
+    {
       "name": "stm32-debug",
       "displayName": "OBC G431 development firmware - Debug",
       "generator": "Ninja",
@@ -20,8 +30,19 @@
   ],
   "buildPresets": [
     {
+      "name": "host-tests",
+      "configurePreset": "host-tests"
+    },
+    {
       "name": "stm32-debug",
       "configurePreset": "stm32-debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "host-tests",
+      "configurePreset": "host-tests",
+      "output": { "outputOnFailure": true }
     }
   ]
 }
