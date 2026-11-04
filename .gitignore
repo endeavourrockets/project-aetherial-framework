@@ -7,13 +7,13 @@ ignore/
 *.su
 
 /.metadata/
-/firmware/build/
-/firmware/Core/Inc/Backup/
-/firmware/Core/Src/Backup/
+/firmware/*/build/
+/firmware/*/Core/Inc/Backup/
+/firmware/*/Core/Src/Backup/
 # CubeMX recreates these; the root build supplies our presets and toolchain.
-/firmware/CMakePresets.json
-/firmware/cmake/gcc-arm-none-eabi.cmake
-/firmware/cmake/starm-clang.cmake
+/firmware/*/CMakePresets.json
+/firmware/*/cmake/gcc-arm-none-eabi.cmake
+/firmware/*/cmake/starm-clang.cmake
 
 
 

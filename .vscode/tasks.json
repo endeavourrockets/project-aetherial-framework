@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Renode: Run firmware",
+      "type": "process",
+      "command": "renode",
+      "args": [
+        "-e",
+        "$bin=@build/${input:buildFolder}/firmware.elf",
+        "-e",
+        "include @renode/aetherial.resc"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "buildFolder",
+      "type": "promptString",
+      "description": "Folder under build/",
+      "default": "stm32-debug"
+    }
+  ]
+}

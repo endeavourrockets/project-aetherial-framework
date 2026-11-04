@@ -8,12 +8,13 @@
   "configurePresets": [
     {
       "name": "stm32-debug",
-      "displayName": "STM32 firmware - Debug",
+      "displayName": "OBC G431 development firmware - Debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "toolchainFile": "${sourceDir}/cmake/arm-none-eabi.cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "AETHERIAL_BOARD": "obc"
       }
     }
   ],
