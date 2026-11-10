@@ -1,0 +1,23 @@
+{
+  "unit": "NOMINAL (design values, not measured)",
+  "date": "2026-10-01",
+  "method": "XLR-PAY-001 model: k_geom = 8/pi^2, charge amplifier phase lead",
+  "index_phase_ref": 0,
+  "ranges": {
+    "HI": {
+      "S_counts_per_vpm": 5.220566,
+      "phi_deg": 3.794,
+      "E0_vpm": 0.0
+    },
+    "LO": {
+      "S_counts_per_vpm": 0.052206,
+      "phi_deg": 3.794,
+      "E0_vpm": 0.0
+    }
+  },
+  "vehicle": {
+    "F_axial": 6.838,
+    "F_transverse": 2.01,
+    "source": "prolate spheroid model, sim/enhancement.py (not measured)"
+  }
+}
