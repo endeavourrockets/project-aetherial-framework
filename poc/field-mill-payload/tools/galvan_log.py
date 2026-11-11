@@ -1,10 +1,10 @@
-"""galvan_log.py - parse payload log files (format in XLR-PAY-005).
+"""galvan_log.py --> reads the payload log files
 
-Every record is 256 bytes, little-endian, starting with sync 0xA55A and ending
-with CRC-16/CCITT-FALSE of bytes 0..253. Records are written two per 512-byte
-sector; zero-filled padding records have no sync word and are skipped.
+every record is 256 bytes, little endian, starts with sync 0xA55A and ends
+with the CRC-16/CCITT-FALSE of bytes 0..253. two records per 512 byte
+sector, the zero padding records have no sync word so they get skipped
 
-Library use:
+using it from other code:
     from galvan_log import read_log, field_from_xy
     hdr, sci, ev, stats = read_log("GAL00001.BIN")
 """
@@ -14,7 +14,7 @@ import struct
 RECORD_SIZE = 256
 SYNC = 0xA55A
 TYPE_HEADER, TYPE_SCIENCE, TYPE_EVENT = 0, 1, 2
-K_BLOCKS = 10                    # tools/params.py, app/config.h
+K_BLOCKS = 10 # same as tools/params.py and app/config.h
 M_SAMPLES = 80
 INVALID_CYCLE = -32768
 
@@ -28,8 +28,8 @@ FLAGS = {
 EVENTS = {1: "STATE_CHANGE", 2: "RANGE_SWITCH", 3: "STEP_SLIP", 4: "STORAGE_ERROR", 5: "SELFTEST",
           6: "RESUMED", 7: "MOTOR", 8: "LOW_BATT", 9: "COMMAND", 10: "DEPLOY",
           11: "POWER_RECOVERY"}
-DEPLOY_EVENTS = {1: "COMMANDED", 2: "EXTENDED", 3: "FAILED"}     # EV_DEPLOY arg8
-RECOVERY_VERDICTS = {0: "PAD", 1: "BOOST", 2: "IN_FLIGHT", 3: "LANDED", 4: "UNKNOWN"}  # EV_POWER_RECOVERY arg8
+DEPLOY_EVENTS = {1: "COMMANDED", 2: "EXTENDED", 3: "FAILED"} # EV_DEPLOY arg8
+RECOVERY_VERDICTS = {0: "PAD", 1: "BOOST", 2: "IN_FLIGHT", 3: "LANDED", 4: "UNKNOWN"} # EV_POWER_RECOVERY arg8
 SELFTEST_BITS = {0: "IMU", 1: "BARO", 2: "STORAGE", 3: "VBAT", 4: "ADC_MID", 5: "MOTOR", 6: "INDEX",
                  7: "NO_SPIN"}
 
@@ -109,7 +109,7 @@ def parse_science(b):
         "p_ref_pa": struct.unpack_from("<i", b, 140)[0],
         "t_launch_s": struct.unpack_from("<I", b, 144)[0] / 1000.0,
         "index_phase": None if b[148] == 0xFF else b[148],
-        # orientation quaternion w, x, y, z (app/attitude.h); None until initialised
+        # orientation quaternion w, x, y, z (app/attitude.h), None until its set up
         "quat": [v / 30000.0 for v in struct.unpack_from("<4h", b, 150)] if b[158] else None,
     }
 
@@ -129,7 +129,7 @@ def parse_event(b):
 
 
 def read_log(path):
-    """Return (headers, science, events, stats). Resynchronises after corruption."""
+    """gives back (headers, science, events, stats). finds its way again after corrupted bits"""
     data = open(path, "rb").read()
     headers, science, events = [], [], []
     stats = {"bytes": len(data), "good": 0, "bad_crc": 0, "padding": 0, "resync_bytes": 0}
@@ -142,8 +142,8 @@ def read_log(path):
                 stats["padding"] += 1
                 i += RECORD_SIZE
                 continue
-            # corrupted or shifted data: search byte by byte for the next sync
-            # word (byte loss can leave records at any alignment)
+            # corrupted or shifted data --> look byte by byte for the next sync
+            # word (lost bytes can leave records at any alignment, annoying)
             stats["resync_bytes"] += 1
             i += 1
             continue
@@ -165,13 +165,13 @@ def read_log(path):
 
 
 def field_from_xy(x, y, cal_range, index_phase=None, index_phase_ref=0, m_samples=M_SAMPLES):
-    """Field at the electrode (V/m) and normalised quadrature from lock-in outputs.
+    """field at the electrode (V/m) and normalised quadrature from the lock-in outputs
 
-    cal_range: dict with S_counts_per_vpm, phi_deg, E0_vpm for the record's range.
-    Model (XLR-PAY-001 6.3): v_ac = -S E cos(theta + phi), so
-        E = (X sin(phi) - Y cos(phi)) / S - E0,  Q = (X cos(phi) + Y sin(phi)) / S.
-    The stepper power-up phase is corrected with the index sensor
-    (XLR-PAY-002 6.3): phi = phi_cal - 2 pi (index_phase - index_phase_ref) / M.
+    cal_range: dict with S_counts_per_vpm, phi_deg, E0_vpm for the record's range
+    model: v_ac = -S E cos(theta + phi), so
+        E = (X sin(phi) - Y cos(phi)) / S - E0,  Q = (X cos(phi) + Y sin(phi)) / S
+    the stepper power up phase gets corrected with the index sensor
+    phi = phi_cal - 2 pi (index_phase - index_phase_ref) / M
     """
     phi = math.radians(cal_range["phi_deg"])
     if index_phase is not None:

@@ -8,10 +8,10 @@
 /*ISA convention, for toposhere and other shit*/
 #define ISA_H_SCALE_M 44330.77f /*po, which is startndard sea-level pressrue*/
 #define ISA_EXPONENT 0.190263f /*sea_level_temp/lapse_rate, (8.31446 × 0.0065) / (9.80665 × 0.0289644) = 0.190263*/
-#define ISA_P0_PA 101325.0f/*gas_constant×lapse_rate/(gravity×molar_mass_of_air)*/
+#define ISA_P0_PA 101325.0f /*gas_constant×lapse_rate/(gravity×molar_mass_of_air)*/
 #define REF_TAU_S 10.0f /*time constant for refrence pressure filter*/
-#define ADRIANA_ALPHA  0.25f /*how much the filter should trust the new altitude measurment*/
-#define ADRIANA_BETA  0.03f /*how much meaurement error chnages velocity estimate*/
+#define ADRIANA_ALPHA 0.25f /*how much the filter should trust the new altitude measurment*/
+#define ADRIANA_BETA 0.03f /*how much meaurement error chnages velocity estimate*/
 
 void altitude_init(altitude_t *a) /*it puts the things below into its corresponding start value*/
 {
@@ -32,7 +32,7 @@ void altitude_init(altitude_t *a) /*it puts the things below into its correspond
 
 float altitude_from_pressure(float p_pa, float p_ref_pa)
 {
-    /*guard below, as negative pressure is invalid reading, not good, below copied code for case like that--copied from a web page 🤡 */
+    /*guard below, as negative pressure is invalid reading, not good, below copied code for case like that--copied from a web page 🤡*/
     if (p_pa <= 0.0f || p_ref_pa <= 0.0f) {
         return 0.0f;
     }
@@ -71,7 +71,7 @@ void altitude_update(altitude_t *a, float p_pa, uint32_t now_ms)
     *i dunno thought ti was a cool concept
     */
 
-    /*pad refrence pressure fucntion */
+    /*pad refrence pressure fucntion*/
     if (!a->ref_valid) {
         /*smaple pressure = 0m*/
         a->p_ref_pa = p_pa;
@@ -99,7 +99,7 @@ void altitude_update(altitude_t *a, float p_pa, uint32_t now_ms)
         return;
     }
     if (dt <= 0.0f) {
-        /* (⊙ _ ⊙ ) */
+        /*(⊙ _ ⊙ )*/
         return;
     }
 

@@ -13,4 +13,4 @@
 */
 uint16_t crc16_ccitt(const uint8_t *data, uint32_t len);
 
-#endif /* CRC16_H */
+#endif /*CRC16_H*/

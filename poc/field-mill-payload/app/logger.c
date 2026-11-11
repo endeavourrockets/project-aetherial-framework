@@ -54,7 +54,7 @@ void logger_put(logger_t *lg, const uint8_t rec[RECORD_SIZE])
 void logger_flush(logger_t *lg)
 {
     if (lg->fill == 1) {
-        /* pad the sector with zeros; the decoder skips records without sync */
+        /*fill rest of sector with zeros, decoder skips records without the sync word anyway*/
         for (uint32_t i = RECORD_SIZE; i < 2 * RECORD_SIZE; i++) {
             lg->sector[i] = 0;
         }

@@ -1,12 +1,12 @@
 /*
- * console.h - minimal text console on USART2 (115200 8N1, ST-LINK VCP).
+ * console.h --> tiny text console on USART2 (115200 8N1, ST-LINK VCP)
  *
- * Commands (case-insensitive, end with CR or LF):
- *   STATUS   one-line status
- *   ARM      arm from the bench (same effect as pulling the arm pin)
+ * commands (upper or lower case doesnt matter, end with CR or LF):
+ *   STATUS   one line status
+ *   ARM      arm from the bench (same as pulling the arm pin)
  *   DISARM   cancel a console ARM
  *   RANGE HI | RANGE LO | RANGE AUTO
- * Output helpers avoid printf so the firmware links without a C library.
+ * no printf in the output helpers, so it links without a C library
  */
 
 #ifndef CONSOLE_H
@@ -19,7 +19,7 @@
 typedef enum { 
     CMD_NONE, 
     CMD_STATUS, 
-    CMD_ARM, /* same as pulling the arm*/
+    CMD_ARM, /*same as pulling the arm*/
     CMD_DISARM, /*opposite of ARm, thingy above*/
     CMD_RANGE_HI, 
     CMD_RANGE_LO,
@@ -40,11 +40,11 @@ console_cmd_t console_poll(char *last_line, uint32_t max); /* poll function--> c
 void con_str(const char *s); /*pointer to text for fucntion, and doesnt chnage it*/
 void con_u32(uint32_t v); /*unsgined number in decimal*/
 void con_i32(int32_t v); /*for singed numbers*/
-void con_fixed(int32_t v, int decimals);   /* prints v / 10^decimals , fixed point numbers & decimanl*/
+void con_fixed(int32_t v, int decimals); /*prints v / 10^decimals, fixed point numbers & decimanl*/
 /*floating point and print float slow on small chip without C lib, quicker this way
 *if decimal too long will not be saved properly in 32 bit config in how i have organised/catagorized my code
 */
 void con_nl(void);
 
-#endif /* CONSOLE_H */
-/*  Bonjour ^•ﻌ•^ฅ  🎅🏻 */
+#endif /*CONSOLE_H*/
+/*Bonjour ^•ﻌ•^ฅ  🎅🏻*/

@@ -1,10 +1,11 @@
 /*
- * payload.c - application glue: sensors, state machine, lock-in queue and
- * logging. See XLR-PAY-002 for the design and timing.
+ * payload.c --> glues the app together: sensors, state machine, lock-in queue
+ * and logging
  *
- * Concurrency: payload_adc_cycle_isr() runs in the ADC DMA interrupt and
- * owns g_lockin and g_range. Everything else runs in the main loop. The two
- * sides share only the SPSC queue and the volatile request/flag words.
+ * who owns what: payload_adc_cycle_isr() runs in the ADC DMA interrupt and
+ * owns g_lockin and g_range, everything else runs in the main loop. the two
+ * sides only share the SPSC queue and the volatile request/flag words
+ * biggest file, good luck (｡•́︿•̀｡)
  */
 #include "payload.h"
 #include "altitude.h"
@@ -23,50 +24,50 @@
 
 #include <string.h>
 
-/* ---- ISR-owned ---- */
-static lockin_t    g_lockin;
+/*---- ISR owned ----*/
+static lockin_t g_lockin;
 static range_ctl_t g_range;
-static spsc_t      g_queue;
-static volatile int8_t g_range_request = -1;   /* -1 none, 0 HI, 1 LO, 2 AUTO */
+static spsc_t g_queue;
+static volatile int8_t g_range_request = -1; /*-1 none, 0 HI, 1 LO, 2 AUTO*/
 
-/* ---- main-loop-owned: zeroed by payload_init(), like .bss after reset ---- */
+/*---- main loop owned: zeroed by payload_init(), like .bss after reset ----*/
 static struct {
-    sm_t        sm;
-    deploy_t    dep;
-    nv_state_t  nv;               /* power-loss record, mirror of what is in flash */
-    bool     nv_valid;
+    sm_t sm;
+    deploy_t dep;
+    nv_state_t nv; /*power loss record, copy of whats in flash*/
+    bool nv_valid;
     uint32_t t_nv_refresh;
-    bool     pl_pending;          /* powered up with the arm pin out: deciding */
+    bool pl_pending; /*powered up with the arm pin out --> deciding*/
     uint32_t t_pl_start;
-    altitude_t  alt;
-    attitude_t  att;
-    logger_t    log;
+    altitude_t alt;
+    attitude_t att;
+    logger_t log;
     payload_stats_t stats;
-    int32_t  p_pa;
-    int16_t  baro_t_cc;
+    int32_t p_pa;
+    int16_t baro_t_cc;
     uint32_t t_baro;
-    bool     baro_seen;
-    int16_t  acc_mg[3];
-    int16_t  gyr_dps10[3];
+    bool baro_seen;
+    int16_t acc_mg[3];
+    int16_t gyr_dps10[3];
     uint32_t t_imu;
-    bool     imu_seen;
+    bool imu_seen;
     uint16_t vbat_mv;
-    bool     low_batt;
-    bool     console_arm;
-    bool     motor_on;
+    bool low_batt;
+    bool console_arm;
+    bool motor_on;
     uint16_t sticky_flags;
     uint32_t last_slips;
     uint32_t last_dropped;
-    uint8_t  last_range;
+    uint8_t last_range;
     uint32_t t_imu_due, t_sm_due, t_slow_log, t_fast_log, t_vbat, t_status;
     uint32_t t_selftest;
     uint16_t spin_min, spin_max;
     uint32_t spin_outputs;
 } g;
 
-/* ------------------------------------------------------------------ */
-/* Interrupt side                                                       */
-/* ------------------------------------------------------------------ */
+/*------------------------------------------------------------------*/
+/*interrupt side*/
+/*------------------------------------------------------------------*/
 
 void payload_adc_cycle_isr(const uint16_t *samples)
 {
@@ -100,9 +101,9 @@ void payload_adc_cycle_isr(const uint16_t *samples)
     }
 }
 
-/* ------------------------------------------------------------------ */
-/* Helpers                                                              */
-/* ------------------------------------------------------------------ */
+/*------------------------------------------------------------------*/
+/*helpers*/
+/*------------------------------------------------------------------*/
 
 static void con_time(uint32_t now)
 {
@@ -271,7 +272,7 @@ static void print_status(uint32_t now)
     con_nl();
 }
 
-/* ---- power-loss record (team decision 2026-10 D4, app/powerloss.h) ---- */
+/*---- power loss record (team decision 2026-10 D4, app/powerloss.h) ----*/
 
 static void nv_store(uint32_t flags, float pad_p_pa)
 {
@@ -289,8 +290,8 @@ static void nv_clear(void)
     }
 }
 
-/* Pad pressure written on arming and refreshed while armed, so the saved
- * reference never lags the weather by more than NV_PAD_REFRESH_MS. */
+/*pad pressure written on arming and refreshed while armed, so the saved
+ * reference is never more than NV_PAD_REFRESH_MS behind the weather*/
 static void nv_pad_tick(uint32_t now)
 {
     if (g.sm.state != ST_ARMED || !g.alt.ref_valid) {
@@ -321,16 +322,16 @@ static void on_state_change(uint32_t now, flight_state_t old)
         logger_flush(&g.log);
     }
     if (old == ST_ARMED && g.sm.state == ST_SAFE) {
-        nv_clear();                                /* disarmed on the pad */
+        nv_clear(); /*disarmed on the pad*/
     }
     if (g.sm.launched && g.nv_valid && !(g.nv.flags & NV_LAUNCHED)) {
-        nv_store(g.nv.flags | NV_ARMED | NV_LAUNCHED, g.alt.p_ref_pa);   /* ref is frozen now */
+        nv_store(g.nv.flags | NV_ARMED | NV_LAUNCHED, g.alt.p_ref_pa); /*ref is frozen now*/
     }
 }
 
-/* Called from the 100 Hz slot while g.pl_pending: after POWERLOSS_DECIDE_MS
- * of barometer and IMU data, decide where we are (powerloss_decide) and
- * enter that state. Nothing moves before this. */
+/*called from the 100 Hz slot while g.pl_pending: after POWERLOSS_DECIDE_MS
+ * of barometer and IMU data, work out where we are (powerloss_decide) and
+ * go into that state. nothing moves before this*/
 static void powerloss_try_decide(uint32_t now)
 {
     bool baro_ok = g.baro_seen && (now - g.t_baro) <= 200u;
@@ -352,22 +353,22 @@ static void powerloss_try_decide(uint32_t now)
     g.pl_pending = false;
     flight_state_t old = g.sm.state;
     if (v == PL_BOOST || v == PL_IN_FLIGHT || v == PL_LANDED) {
-        /* Use the saved pad reference and restart the altitude filter from
-         * the current height (no step through the alpha-beta filter). */
+        /*use the saved pad reference and restart the altitude filter from
+         * the current height (no jump through the alpha-beta filter)*/
         altitude_set_ref(&g.alt, g.nv.pad_p_pa, true);
         g.alt.init = false;
         flight_state_t st = v == PL_BOOST ? ST_BOOST : (v == PL_IN_FLIGHT ? ST_COAST : ST_LANDED);
-        /* Time since launch is unknown, so all time-outs and the apogee
-         * lock-out restart from now. Not skipping the lock-out matters: a cut
-         * while still transonic would otherwise let the barometer's Mach 1
-         * pressure error fake a fall (found by power_loss_in_flight). Cost: a
-         * cut near apogee gets its APOGEE marker up to APOGEE_LOCKOUT_MS late;
-         * the mills run through COAST and DESCENT either way. */
+        /*time since launch is unknown, so all the time-outs and the apogee
+         * lock-out restart from now. NOT skipping the lock-out matters: a cut
+         * while still transonic would let the barometer's Mach 1 pressure
+         * error fake a fall (found in my flight sim tests, scary). cost: a
+         * cut near apogee gets its APOGEE marker up to APOGEE_LOCKOUT_MS late,
+         * the mills run through COAST and DESCENT either way*/
         sm_resume(&g.sm, st, 0u, alt_cm, now);
         g.sticky_flags |= RF_RESUMED;
         g.stats.resumed = true;
     } else {
-        sm_init(&g.sm, ST_ARMED, now);             /* pad or unknown: wait for launch, mills in */
+        sm_init(&g.sm, ST_ARMED, now); /*pad or unknown --> wait for launch, mills in*/
     }
     log_event(EV_POWER_RECOVERY, (uint8_t)v, 0, alt_cm, (int32_t)(g.nv_valid ? g.nv.flags : 0u),
               "power-on, arm pin out");
@@ -388,8 +389,8 @@ static void finish_selftest(uint32_t now)
     if (drv_motor_rev_period_us() == 0) {
         f |= STF_INDEX;
     }
-    /* mid-rail check: retracted, the mill is shielded and the waveform must
-     * sit near mid-scale */
+    /*mid rail check: retracted, the mill is shielded and the waveform must
+     * sit near mid scale*/
     if (g.spin_outputs == 0 || g.spin_min < ADC_MID_COUNTS / 2 || g.spin_max > ADC_MID_COUNTS + ADC_MID_COUNTS / 2) {
         f |= STF_ADC_MID;
     }
@@ -469,9 +470,9 @@ static void update_led(uint32_t now)
     drv_led_set(on);
 }
 
-/* ------------------------------------------------------------------ */
-/* Public                                                               */
-/* ------------------------------------------------------------------ */
+/*------------------------------------------------------------------*/
+/*public*/
+/*------------------------------------------------------------------*/
 
 void payload_init(void)
 {
@@ -546,7 +547,7 @@ void payload_init(void)
     con_nl();
 
     if (resume) {
-        /* Reset in flight: skip the self-test spin and carry on. */
+        /*reset mid flight --> skip the self test spin and carry on*/
         sm_resume(&g.sm, (flight_state_t)ps.state, ps.ms_since_launch, ps.alt_max_cm, now);
         altitude_set_ref(&g.alt, ps.p_ref_pa, true);
         g.sticky_flags |= RF_RESUMED;
@@ -556,15 +557,15 @@ void payload_init(void)
         con_str(sm_state_name(g.sm.state));
         con_nl();
     } else if (drv_arm_switch_armed()) {
-        /* Powered up with the arm pin already out and no RAM state: possibly
-         * a power cut in flight. Log at once, no self-test spin, nothing
-         * moves until powerloss_try_decide() has looked at the sensors. */
+        /*powered up with the arm pin already out and no RAM state --> maybe
+         * a power cut in flight. log straight away, no self test spin, nothing
+         * moves until powerloss_try_decide() has looked at the sensors*/
         g.pl_pending = true;
         g.t_pl_start = now;
         con_str("POWER-ON WITH ARM PIN OUT: checking where we are");
         con_nl();
     } else {
-        nv_clear();                                /* pin in: on the bench or pad, safe */
+        nv_clear(); /*pin in --> on the bench or pad, safe*/
         sm_init(&g.sm, ST_SELFTEST, now);
         g.t_selftest = now;
         on_state_change(now, ST_INIT);
@@ -584,23 +585,23 @@ void payload_loop_once(void)
     lockin_out_t out;
     char line[24];
 
-    /* console */
+    /*console*/
     switch (console_poll(line, sizeof line)) {
-    case CMD_STATUS:     print_status(now); break;
-    case CMD_ARM:        g.console_arm = true;  log_event(EV_COMMAND, 0, 0, 0, 0, line); break;
-    case CMD_DISARM:     g.console_arm = false; log_event(EV_COMMAND, 0, 0, 0, 0, line); break;
-    case CMD_RANGE_HI:   g_range_request = 0; break;
-    case CMD_RANGE_LO:   g_range_request = 1; break;
+    case CMD_STATUS: print_status(now); break;
+    case CMD_ARM: g.console_arm = true; log_event(EV_COMMAND, 0, 0, 0, 0, line); break;
+    case CMD_DISARM: g.console_arm = false; log_event(EV_COMMAND, 0, 0, 0, 0, line); break;
+    case CMD_RANGE_HI: g_range_request = 0; break;
+    case CMD_RANGE_LO: g_range_request = 1; break;
     case CMD_RANGE_AUTO: g_range_request = 2; break;
-    case CMD_VERSION:    con_str(FW_GIT_HASH); con_nl(); break;
-    case CMD_UNKNOWN:    con_str("? STATUS ARM DISARM RANGE HI|LO|AUTO VERSION"); con_nl(); break;
+    case CMD_VERSION: con_str(FW_GIT_HASH); con_nl(); break;
+    case CMD_UNKNOWN: con_str("? STATUS ARM DISARM RANGE HI|LO|AUTO VERSION"); con_nl(); break;
     default: break;
     }
 
     drv_motor_tick(now);
     drv_deploy_tick(now);
 
-    /* IMU at 100 Hz */
+    /*IMU at 100 Hz*/
     if ((int32_t)(now - g.t_imu_due) >= 0) {
         g.t_imu_due += IMU_PERIOD_MS;
         if (drv_imu_read(g.acc_mg, g.gyr_dps10)) {
@@ -610,7 +611,7 @@ void payload_loop_once(void)
         }
     }
 
-    /* barometer: driver paces its own conversions */
+    /*barometer, the driver paces its own conversions*/
     {
         int32_t p;
         int16_t t;
@@ -623,7 +624,7 @@ void payload_loop_once(void)
         }
     }
 
-    /* battery at 1 Hz */
+    /*battery at 1 Hz*/
     if (now - g.t_vbat >= 1000u) {
         g.t_vbat = now;
         g.vbat_mv = drv_adc_vbat_mv();
@@ -633,7 +634,7 @@ void payload_loop_once(void)
         }
     }
 
-    /* state machine at 100 Hz */
+    /*state machine at 100 Hz*/
     if ((int32_t)(now - g.t_sm_due) >= 0) {
         g.t_sm_due += SM_PERIOD_MS;
         if (g.pl_pending) {
@@ -664,7 +665,7 @@ void payload_loop_once(void)
         }
     }
 
-    /* lock-in outputs from the ISR */
+    /*lock-in outputs from the ISR*/
     while (spsc_pop(&g_queue, &out)) {
         g.stats.outputs++;
         if (out.range != g.last_range) {
@@ -685,8 +686,8 @@ void payload_loop_once(void)
         }
     }
 
-    /* sensor-only records while the motor is off: 10 Hz in flight (BOOST,
-     * COAST before deployment), 1 Hz on the pad and after landing */
+    /*sensor only records while the motor is off: 10 Hz in flight (BOOST,
+     * COAST before deployment), 1 Hz on the pad and after landing*/
     if (!g.motor_on && g.sm.state != ST_SELFTEST) {
         if (sm_fast_logging(&g.sm) || g.pl_pending) {
             if (now - g.t_fast_log >= FAST_LOG_PERIOD_MS) {

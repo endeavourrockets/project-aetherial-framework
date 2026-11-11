@@ -21,9 +21,9 @@ typedef struct {
 } range_ctl_t;
 
 typedef struct {
-    bool valid;/* cycle may be averaged... */
-    uint16_t flags;/* RF_SATURATED and/or RF_SETTLING */
-    bool switched;/* range changed, this is where caller drives the switch */
+    bool valid; /*cycle can be averaged...*/
+    uint16_t flags; /*RF_SATURATED and/or RF_SETTLING*/
+    bool switched; /*range changed, this is where the caller drives the switch*/
 } range_result_t;
 
 void range_init(range_ctl_t *r, uint8_t start_range);
@@ -31,5 +31,5 @@ range_result_t range_on_cycle(range_ctl_t *r, uint16_t mn, uint16_t mx);
 bool range_on_output(range_ctl_t *r, float x, float y, uint8_t n_valid);
 void range_force(range_ctl_t *r, uint8_t range, bool auto_enabled);
 
-#endif /* RANGE_H */
-/* HI davide!!!*/
+#endif /*RANGE_H*/
+/*HI davide!!!*/

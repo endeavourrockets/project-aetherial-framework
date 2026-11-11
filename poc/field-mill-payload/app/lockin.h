@@ -27,30 +27,30 @@
 
 /*function to see one window every K_BLOCKS cycles, into the log*/
 typedef struct {
-    float    x, y; /*mean of valid cycles, counts units*/
-    uint8_t  n_valid; /*number of K_BLOCKS cycles*/
-    uint8_t  range; /*front end range, if it HI or LO*/
-    uint16_t flags; /* RF_SATURATED, RF_SETTLING from record.h */
+    float x, y; /*mean of valid cycles, counts units*/
+    uint8_t n_valid; /*number of K_BLOCKS cycles*/
+    uint8_t range; /*front end range, if it HI or LO*/
+    uint16_t flags; /*RF_SATURATED, RF_SETTLING from record.h*/
     uint16_t raw_min, raw_max; /*max & min in ADC sample--> can show saturation*/
-    int16_t  cx[K_BLOCKS], cy[K_BLOCKS]; /*cycle x,y rounded to int16*/
+    int16_t cx[K_BLOCKS], cy[K_BLOCKS]; /*cycle x,y rounded to int16*/
 } lockin_out_t;
 
 /*working state of window being filled, kept between calls*/
 
 typedef struct {
-    float    acc_x, acc_y; /*run SUM of vlaid x,y*/
-    uint8_t  acc_range; /* range of the cycles in acc_x, acc_y */
-    uint8_t  n_seen, n_valid; /*cycles in window*/
+    float acc_x, acc_y; /*run SUM of vlaid x,y*/
+    uint8_t acc_range; /*range of the cycles in acc_x, acc_y*/
+    uint8_t n_seen, n_valid; /*cycles in window*/
     uint16_t flags;
     uint16_t raw_min, raw_max; /*the raw extremes*/
-    int16_t  cx[K_BLOCKS], cy[K_BLOCKS]; /*per cycle values*/
+    int16_t cx[K_BLOCKS], cy[K_BLOCKS]; /*per cycle values*/
 } lockin_t;
 
-/*to clear state, would need ot call once before first lockin_push() */
+/*to clear state, would need ot call once before first lockin_push()*/
 void lockin_init(lockin_t *l);
 
 
-/* Demodulate one cycle. Pure function, safe in an ISR.   :Þ  */
+/*demodulate one cycle. pure function, safe in an ISR   :Þ*/
 void lockin_cycle(const uint16_t *s, float *x, float *y, uint16_t *mn, uint16_t *mx);
 
 /* Add one cycle-->valid false excludes it from the average (settling, ദ്ദി ˉ꒳ˉ )✧
@@ -63,6 +63,6 @@ void lockin_cycle(const uint16_t *s, float *x, float *y, uint16_t *mn, uint16_t 
 bool lockin_push(lockin_t *l, float x, float y, bool valid, uint16_t cycle_flags,
                  uint16_t mn, uint16_t mx, uint8_t range, lockin_out_t *out);
 
-#endif /* LOCKIN_H */
+#endif /*LOCKIN_H*/
 
 /*and then she went to sleep 😴😪🥱💤🛌🏼*/

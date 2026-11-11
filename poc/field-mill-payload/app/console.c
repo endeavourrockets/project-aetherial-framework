@@ -19,10 +19,10 @@ static char up(char c) /*condition shtick*/
 {
     return (c >= 'a' && c <= 'z') ? (char)(c - 32) : c;
 }
-/*My own replacement for strcmp(a, b) == 0 (no C library). eq() true id strings a & b are equal */
+/*My own replacement for strcmp(a, b) == 0 (no C library). eq() true id strings a & b are equal*/
 static bool eq(const char *a, const char *b)
 {
-    while (*a && *b) { /*until either string reaches '\0' */
+    while (*a && *b) { /*until either string reaches '\0'*/
         if (*a++ != *b++) { /*compare each character, then step*/
             return false; /*first different character*/
         }
@@ -51,13 +51,13 @@ console_cmd_t console_poll(char *last_line, uint32_t max)
             last_line[i] = '\0';
             g_len = 0; /*empty buffer for next line*/
             /*below it looks fro command, and the match is returned, as seen in console.h*/
-            if (eq(g_line, "STATUS"))     return CMD_STATUS;
-            if (eq(g_line, "ARM"))        return CMD_ARM;
-            if (eq(g_line, "DISARM"))     return CMD_DISARM;
-            if (eq(g_line, "RANGE HI"))   return CMD_RANGE_HI;
-            if (eq(g_line, "RANGE LO"))   return CMD_RANGE_LO;
+            if (eq(g_line, "STATUS")) return CMD_STATUS;
+            if (eq(g_line, "ARM")) return CMD_ARM;
+            if (eq(g_line, "DISARM")) return CMD_DISARM;
+            if (eq(g_line, "RANGE HI")) return CMD_RANGE_HI;
+            if (eq(g_line, "RANGE LO")) return CMD_RANGE_LO;
             if (eq(g_line, "RANGE AUTO")) return CMD_RANGE_AUTO;
-            if (eq(g_line, "VERSION"))    return CMD_VERSION;
+            if (eq(g_line, "VERSION")) return CMD_VERSION;
             return CMD_UNKNOWN;
             /*bytes still in UART go though porcess in next call*/
         }
@@ -66,7 +66,7 @@ console_cmd_t console_poll(char *last_line, uint32_t max)
             g_line[g_len++] = up((char)c); /*store then g_len +1*/
         }
     }
-    return CMD_NONE; /* no complete line yet, duh, these comments are cus i got lost alot in the sauce*/
+    return CMD_NONE; /*no complete line yet, duh, these comments are cus i got lost alot in the sauce*/
 }
 
 void con_str(const char *s)

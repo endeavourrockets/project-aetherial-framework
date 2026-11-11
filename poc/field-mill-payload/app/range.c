@@ -1,5 +1,5 @@
 /*
- * range.c - see range.h.
+ * range.c --> look at range.h, everything is explaind there
  */
 #include "range.h"
 #include "config.h"

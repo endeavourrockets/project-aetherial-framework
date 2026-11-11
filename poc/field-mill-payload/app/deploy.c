@@ -1,5 +1,5 @@
 /*
- * deploy.c - see deploy.h.
+ * deploy.c --> see deploy.h
  */
 #include "deploy.h"
 #include "config.h"
@@ -24,8 +24,8 @@ void deploy_init(deploy_t *d)
     d->t_window = 0;
 }
 
-/* Deploying is allowed from COAST until landing. After a reset that resumes
- * in APOGEE or DESCENT, the delay runs from the first step after the reset. */
+/*deploying is allowed from COAST until landing. if a reset resumes in APOGEE
+ * or DESCENT the delay counts from the first step after the reset*/
 static bool window(flight_state_t s)
 {
     return s == ST_COAST || s == ST_APOGEE || s == ST_DESCENT;
@@ -40,7 +40,7 @@ deploy_action_t deploy_step(deploy_t *d, flight_state_t state, bool extended, ui
             break;
         }
         if (extended) {
-            /* already out (reset in flight): only wait for the settle time */
+            /*already out (reset mid flight) --> only wait the settle time*/
             go(d, DEP_SETTLING, now);
             return DEP_ACT_CONFIRMED;
         }

@@ -1,9 +1,9 @@
 /*
- * ms5611_calc.c - see ms5611_calc.h.
+ * ms5611_calc.c --> see ms5611_calc.h
  *
- * Datasheet example: C1..C6 = 40127, 36924, 23317, 23282, 33464, 28312,
+ * datasheet example: C1..C6 = 40127, 36924, 23317, 23282, 33464, 28312,
  * D1 = 9085466, D2 = 8569150 gives TEMP = 2007 (20.07 C) and
- * P = 100009 (1000.09 mbar = 100009 Pa). Checked in tests/c/test_app.c.
+ * P = 100009 (1000.09 mbar = 100009 Pa). checked in tests/test_unit.c, it works yay
  */
 #include "ms5611_calc.h"
 
@@ -15,7 +15,7 @@ void ms5611_compensate(const uint16_t prom[8], uint32_t d1, uint32_t d2,
     int64_t off = ((int64_t)prom[2] << 16) + (((int64_t)prom[4] * dT) >> 7);
     int64_t sens = ((int64_t)prom[1] << 15) + (((int64_t)prom[3] * dT) >> 8);
 
-    /* second-order compensation below 20 C */
+    /*second order compensation, only below 20 C*/
     if (temp < 2000) {
         int64_t t2 = (dT * dT) >> 31;
         int64_t d = temp - 2000;
@@ -30,7 +30,7 @@ void ms5611_compensate(const uint16_t prom[8], uint32_t d1, uint32_t d2,
         off -= off2;
         sens -= sens2;
     }
-    int64_t p = ((((int64_t)d1 * sens) >> 21) - off) >> 15;  /* 0.01 mbar = 1 Pa */
+    int64_t p = ((((int64_t)d1 * sens) >> 21) - off) >> 15; /*0.01 mbar = 1 Pa*/
     *p_pa = (int32_t)p;
     *temp_cc = (int32_t)temp;
 }

@@ -1,11 +1,11 @@
 /*
- * persist.c - see persist.h. On the host the section attribute is ignored
- * and the block behaves as an ordinary global.
+ * persist.c --> see persist.h. on the PC the section attribute is just ignored
+ * so the block is a normal global variable, nothing fancy
  */
 #include "persist.h"
 #include "crc16.h"
 
-#define PERSIST_MAGIC 0x47414C56u   /* "GALV" */
+#define PERSIST_MAGIC 0x47414C56u /*"GALV" in hex, cute*/
 
 #if defined(__arm__)
 __attribute__((section(".noinit")))

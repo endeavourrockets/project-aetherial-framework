@@ -2,12 +2,12 @@
  *state_machine.c, see state_machine.h
  *every transition needs a condition to hold continuously for a dwell
  *time, like this a single noisy sample cannot change state
- *time-outs guarantee also make sure it doesnt get stuck in a state forever if a sensor fails 
+ *time-outs also make sure it doesnt get stuck in a state forever if a sensor fails
  */
 #include "state_machine.h"
 #include "config.h"
 
-#define ARM_DEBOUNCE_MS   500u
+#define ARM_DEBOUNCE_MS 500u
 
 static const char *const NAMES[ST_COUNT] = {
     "INIT", "SELFTEST", "SAFE", "ARMED", "BOOST", "COAST", "APOGEE", "DESCENT", "LANDED"
@@ -18,8 +18,8 @@ const char *sm_state_name(flight_state_t s)
     return (s < ST_COUNT) ? NAMES[s] : "?";
 }
 
-/*track how long 'cond' has been continuously true. 'now' is never 0 in
- *use (the tick counter starts at 1 ms or later), so 0 means "false". 
+/*track how long 'cond' has been true without stopping. 'now' is never 0 when
+ *used (tick counter starts at 1 ms or later), so 0 means "false"
  */
 static bool held(uint32_t *t_since, bool cond, uint32_t now, uint32_t dwell)
 {
@@ -141,10 +141,9 @@ bool sm_step(sm_t *sm, const sm_inputs_t *in)
     return sm->state != old;
 }
 
-/*The motor may only run with the mills deployed, i.e. from COAST until
- *landing. payload.c additionally waits for the
- *deploy sequence (deploy.h) before starting it. Off in SAFE, ARMED, BOOST
- *and LANDED*/
+/*motor can only run with the mills out, so from COAST until landing.
+ *payload.c also waits for the deploy sequence (deploy.h) before starting it.
+ *off in SAFE, ARMED, BOOST and LANDED*/
 bool sm_motor_wanted(const sm_t *sm)
 {
     switch (sm->state) {

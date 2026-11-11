@@ -1,8 +1,7 @@
 /*
- * lockin.c - see lockin.h. 
- * arithmetic order matches the python reference
- * in sim/field_mill_sim.py so that golden vectors agree to float32
- * rounding (build with -ffp-contract=off).
+ * lockin.c --> see lockin.h
+ * the maths order matches my python version of the field mill sim (not in here)
+ * so the test vectors agree to float32 rounding (build with -ffp-contract=off)
  * phase would be locked to the rotor in hardware
  */
 #include "lockin.h"
@@ -18,7 +17,7 @@
 #error "lut_sincos.h does not match M_SAMPLES: run tools/gen_lut.py"
 #endif
 
-/* n_seen / n_valid are uint8_t and index cx[]/cy[], so K_BLOCKS must fit*/
+/*n_seen / n_valid are uint8_t and index cx[]/cy[], so K_BLOCKS must fit*/
 #if K_BLOCKS > 255
 #error "K_BLOCKS must fit in uint8_t"
 #endif
@@ -67,7 +66,7 @@ void lockin_init(lockin_t *l)
 *param[out] mx largest raw sample in this revolution
 *
 *The 2/N factor scales the correlation sums to peak amplitude
-*The order of operations must match sim/field_mill_sim.py (see file header, lockin.h)
+*The order of operations must match my python sim (see file header, lockin.h)
 *this above, is something i needed i was getting lost in the sauce
 */
 
@@ -121,7 +120,7 @@ bool lockin_push(lockin_t *l, float x, float y, bool valid, uint16_t cycle_flags
         l->raw_max = mx;
     }
     if (valid && l->n_valid > 0 && range != l->acc_range) {
-        /* range changed inside the window--> drop the old-range cycles */
+        /*range changed inside the window--> drop the old-range cycles*/
         l->acc_x = 0.0f;
         l->acc_y = 0.0f;
         l->n_valid = 0;
@@ -145,7 +144,7 @@ bool lockin_push(lockin_t *l, float x, float y, bool valid, uint16_t cycle_flags
     if (l->n_seen < K_BLOCKS) {
         return false; /*window not full yet*/
     }
-    /* complete window*/
+    /*complete window*/
     out->n_valid = l->n_valid;
     out->x = l->n_valid ? l->acc_x / (float)l->n_valid : 0.0f;
     out->y = l->n_valid ? l->acc_y / (float)l->n_valid : 0.0f;

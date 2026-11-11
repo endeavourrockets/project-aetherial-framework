@@ -1,7 +1,7 @@
 {
   "unit": "NOMINAL (design values, not measured)",
   "date": "2026-10-01",
-  "method": "XLR-PAY-001 model: k_geom = 8/pi^2, charge amplifier phase lead",
+  "method": "model: k_geom = 8/pi^2, charge amplifier phase lead",
   "index_phase_ref": 0,
   "ranges": {
     "HI": {

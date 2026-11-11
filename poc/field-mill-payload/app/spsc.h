@@ -1,7 +1,7 @@
 /*
- * spsc.h - single-producer single-consumer queue of lock-in outputs.
- * Producer: ADC DMA interrupt. Consumer: main loop. No locks needed:
- * each index is written by one side only, with a barrier before publishing.
+ * spsc.h --> single producer single consumer queue for the lock-in outputs
+ * producer = ADC DMA interrupt, consumer = main loop. no locks needed bc
+ * each index is only written by one side, with a barrier before publishing
  */
 #ifndef SPSC_H
 #define SPSC_H
@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include "lockin.h"
 
-#define SPSC_LEN 16u                 /* power of two; 1.6 s of outputs */
+#define SPSC_LEN 16u /*power of two, 1.6 s of outputs*/
 
 #if defined(__arm__)
 #define SPSC_BARRIER() __asm volatile("dmb" ::: "memory")
@@ -20,9 +20,9 @@
 
 typedef struct {
     lockin_out_t buf[SPSC_LEN];
-    volatile uint32_t head;          /* written by producer */
-    volatile uint32_t tail;          /* written by consumer */
-    volatile uint32_t dropped;       /* producer: outputs lost when full */
+    volatile uint32_t head; /*written by the producer*/
+    volatile uint32_t tail; /*written by the consumer*/
+    volatile uint32_t dropped; /*producer: outputs lost when its full*/
 } spsc_t;
 
 static inline void spsc_init(spsc_t *q)
@@ -56,4 +56,4 @@ static inline bool spsc_pop(spsc_t *q, lockin_out_t *v)
     return true;
 }
 
-#endif /* SPSC_H */
+#endif /*SPSC_H*/

@@ -1,18 +1,19 @@
 /*
- * record.c - pack records into the 256-byte on-card format (XLR-PAY-005).
+ * record.c --> packs the records into the 256 byte format that goes on the SD card
+ * byte map is in record.h (ﾉ◕ヮ◕)ﾉ
  */
 #include "record.h"
 #include "crc16.h"
 
-static void put_u8(uint8_t *b, uint32_t o, uint8_t v)   { b[o] = v; }
+static void put_u8(uint8_t *b, uint32_t o, uint8_t v) { b[o] = v; }
 static void put_u16(uint8_t *b, uint32_t o, uint16_t v) { b[o] = (uint8_t)v; b[o + 1] = (uint8_t)(v >> 8); }
 static void put_u32(uint8_t *b, uint32_t o, uint32_t v)
 {
     b[o] = (uint8_t)v; b[o + 1] = (uint8_t)(v >> 8);
     b[o + 2] = (uint8_t)(v >> 16); b[o + 3] = (uint8_t)(v >> 24);
 }
-static void put_i16(uint8_t *b, uint32_t o, int16_t v)  { put_u16(b, o, (uint16_t)v); }
-static void put_i32(uint8_t *b, uint32_t o, int32_t v)  { put_u32(b, o, (uint32_t)v); }
+static void put_i16(uint8_t *b, uint32_t o, int16_t v) { put_u16(b, o, (uint16_t)v); }
+static void put_i32(uint8_t *b, uint32_t o, int32_t v) { put_u32(b, o, (uint32_t)v); }
 static void put_f32(uint8_t *b, uint32_t o, float v)
 {
     union { float f; uint32_t u; } c = { .f = v };

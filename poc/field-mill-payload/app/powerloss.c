@@ -26,38 +26,38 @@ bool nv_check(const nv_state_t *s)
 
 pl_verdict_t powerloss_decide(const pl_inputs_t *in)
 {
-    /* without a pad reference the height is unknown: stay safe (mills in */
+    /*no pad reference --> height unknown, stay safe (mills in)*/
     if (!in->nv_valid || !nv_check(&in->nv) || !(in->nv.flags & NV_ARMED) || !in->baro_ok) {
         return PL_UNKNOWN;
     }
     float alt_m = altitude_from_pressure(in->p_now_pa, in->nv.pad_p_pa);
     bool high = alt_m * 100.0f >= (float)POWERLOSS_MIN_ALT_CM;
-    /* burning = above the LAUNCH threshold (3 g), not the burnout one: a
-     * payload standing on the ground already reads +1 g along its axis*/
+    /*burning = above the LAUNCH threshold (3 g), not the burnout one, bc a
+     * payload just standing on the ground already reads +1 g along its axis*/
     bool burning = in->imu_ok && in->accel_axial_mg >= LAUNCH_ACCEL_MG;
 
-    /* Still burning (high up, or low but launch already recorded)? Then the
-     *mills must not deploy yet: BOOST ends on burnout or BOOST_MAX_MS */
+    /*still burning (high up, or low but launch already recorded)? then the
+     *mills must not come out yet: BOOST ends on burnout or BOOST_MAX_MS*/
     if (burning && (high || (in->nv.flags & NV_LAUNCHED))) {
         return PL_BOOST;
     }
     if (high) {
         return PL_IN_FLIGHT;
     }
-    /* Near pad level: on the pad if we never launched, else on the ground.
+    /*near pad level --> on the pad if we never launched, else on the ground.
      *known gap: a cut in the last POWERLOSS_MIN_ALT_CM of the descent is
-     *also called LANDED, which only switches the mills off a little early*/
+     *also called LANDED, that only switches the mills off a bit early, not a big deal*/
     return (in->nv.flags & NV_LAUNCHED) ? PL_LANDED : PL_PAD;
 }
 
 const char *powerloss_name(pl_verdict_t v)
 {
     switch (v) {
-    case PL_PAD:       return "pad";
-    case PL_BOOST:     return "boost";
+    case PL_PAD: return "pad";
+    case PL_BOOST: return "boost";
     case PL_IN_FLIGHT: return "in flight";
-    case PL_LANDED:    return "landed";
-    default:           return "unknown";
+    case PL_LANDED: return "landed";
+    default: return "unknown";
     }
 }
 

@@ -1,16 +1,16 @@
-"""decode_log.py - turn a payload log (GALnnnnn.BIN) into CSV files, a summary
-and optionally plots, applying a calibration file.
+"""decode_log.py --> turns a payload log (GALnnnnn.BIN) into CSV files, a summary
+and plots if you want, using a calibration file
 
-Usage:
+how to use:
     python tools/decode_log.py GAL00001.BIN [--cal tools/nominal_cal.json] [--out DIR] [--plot]
 
-Outputs in DIR (default: next to the log, folder <name>_decoded/):
+what comes out in DIR (default: next to the log, folder <name>_decoded/):
     header.json   header record(s)
     science.csv   one row per science record with E at the window and,
-                  if the calibration gives a vehicle factor, the ambient field
-    cycles.csv    per-cycle values (100 Hz) for high-resolution work
+                  if the calibration has a vehicle factor, the ambient field
+    cycles.csv    per cycle values (100 Hz) for the high resolution stuff
     events.csv    event records
-    flight.png    field, altitude and acceleration against time (--plot)
+    flight.png    field, altitude and acceleration against time (--plot) (◕‿◕)
 """
 import argparse
 import csv
@@ -20,7 +20,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from galvan_log import K_BLOCKS, field_from_xy, read_log  # noqa: E402
+from galvan_log import K_BLOCKS, field_from_xy, read_log # noqa: E402
 
 DEFAULT_CAL = os.path.join(HERE, "nominal_cal.json")
 
